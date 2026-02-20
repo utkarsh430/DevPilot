@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Environment & secrets
+.env
+.env*.local
+.env.local
+*.pem
+# Local coding-agent context and tooling state: kept on the maintainer's machine, never published.
+.claude/
+AGENTS.md
+CLAUDE.md
+.no-mistakes.yaml
+docs/SESSION_HANDOFF.md
+docs/PLAN_MODE_PROMPT.md
+claude_oauth_token*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.DS_Store
+# Per-developer MCP client config (points at local tooling), not part of the repo
+.mcp.json
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage/
+.turbo/
+
+# Supabase
+supabase/.branches
+supabase/.temp
+*.tsbuildinfo
+
+# Phase 1 / M12 evals — runtime artifacts (snapshots ARE committed)
+tests/evals/.tmp/
+tests/evals/candidates.jsonl
+tests/evals/snapshots/.qa.system.txt.bak
+
+# Local Claude Code runner workspaces (per-ticket git clones; never committed)
+.devpilot/
+
+# Inngest dev-server persisted state (`inngest dev --persist` writes it under its
+# cwd; dev-inngest.mjs points that at ~/.devpilot/inngest, this is belt-and-braces)
+.inngest/
