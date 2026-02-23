@@ -1,0 +1,613 @@
+@import "tailwindcss";
+
+/* Expand the `dark:` Tailwind variant so it fires under any dark-leaning
+   palette, not just the literal `.dark` class. The light-leaning named themes
+   (daylight, lilac-cream, blush-butter) keep `dark:` *off* — they're light and
+   dark: hardcoded colors would clash. */
+@custom-variant dark (&:where(
+  .dark, .dark *,
+  [data-theme="dark"], [data-theme="dark"] *
+));
+
+/* ─── Design tokens (shadcn HSL) ──────────────────────────────────────────
+ * `:root` is "DevPilot Light" (day shift). `.dark` is "DevPilot Dark" (night
+ * shift) and is toggled by the theme provider for
+ * theme === "light" | "dark" | "system".
+ * Three named palettes are declared below as [data-theme="…"] blocks. The
+ * provider sets exactly one of: a) .dark class (DevPilot dark), b) nothing
+ * (DevPilot light), c) data-theme attribute (named palette). They never mix.
+ *
+ * Identity — "the dispatch board": porcelain paper / deep ink-blue chrome,
+ * warm chalk text, and one signal-orange accent (the expedite card, the
+ * baton). Primary IS the signal color, tuned per mode for AA contrast.
+ */
+:root {
+  --background: 40 20% 97%;
+  --foreground: 230 20% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 230 20% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 230 20% 11%;
+  --primary: 21 90% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 14% 92%;
+  --secondary-foreground: 230 20% 11%;
+  --muted: 40 14% 92%;
+  --muted-foreground: 230 8% 40%;
+  --accent: 40 16% 89%;
+  --accent-foreground: 230 20% 11%;
+  --destructive: 0 74% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 64% 29%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 30%;
+  --warning-foreground: 0 0% 100%;
+  --border: 40 12% 86%;
+  --input: 40 12% 84%;
+  --ring: 22 90% 46%;
+  --radius: 0.625rem;
+
+  /* Chart accents — used in inspector, builder edge labels, status pills.
+     Doubles as the role spectrum: blue PM · violet Engineer · green QA ·
+     amber DevOps · red Security. */
+  --chart-1: 217 85% 49%; /* blue */
+  --chart-2: 152 60% 30%; /* green */
+  --chart-3: 38 92% 30%; /* amber */
+  --chart-4: 262 70% 56%; /* violet */
+  --chart-5: 4 74% 46%; /* red */
+
+  /* Sidebar tokens — subtly distinct from card so the rail reads as chrome. */
+  --sidebar: 40 20% 95%;
+  --sidebar-foreground: 230 20% 11%;
+  --sidebar-border: 40 12% 86%;
+  --sidebar-accent: 40 14% 91%;
+  --sidebar-accent-foreground: 230 20% 11%;
+}
+
+.dark,
+[data-theme="dark"] {
+  --background: 228 20% 7%;
+  --foreground: 40 24% 93%;
+  --card: 228 17% 10%;
+  --card-foreground: 40 24% 93%;
+  --popover: 228 17% 10%;
+  --popover-foreground: 40 24% 93%;
+  --primary: 25 95% 56%;
+  --primary-foreground: 228 25% 8%;
+  --secondary: 228 14% 15%;
+  --secondary-foreground: 40 24% 93%;
+  --muted: 228 14% 15%;
+  --muted-foreground: 36 8% 64%;
+  --accent: 228 14% 17%;
+  --accent-foreground: 40 24% 93%;
+  --destructive: 0 72% 63%;
+  --destructive-foreground: 228 25% 8%;
+  --success: 152 55% 48%;
+  --success-foreground: 228 20% 7%;
+  --warning: 40 95% 58%;
+  --warning-foreground: 228 20% 7%;
+  --border: 228 13% 17%;
+  --input: 228 13% 19%;
+  --ring: 25 95% 58%;
+
+  --chart-1: 217 90% 64%;
+  --chart-2: 152 55% 52%;
+  --chart-3: 40 95% 58%;
+  --chart-4: 262 80% 70%;
+  --chart-5: 4 80% 64%;
+
+  --sidebar: 228 22% 6%;
+  --sidebar-foreground: 40 24% 93%;
+  --sidebar-border: 228 13% 15%;
+  --sidebar-accent: 228 15% 12%;
+  --sidebar-accent-foreground: 40 24% 93%;
+}
+
+/* ─── Named palettes (Phase 2.5+ themes) ─────────────────────────────────
+ * Each block declares the full token set so the theme is self-contained.
+ * Anchors come from the 2-color reference palettes shipped 2026-06-07.
+ *
+ * All three named palettes are light-leaning (color-scheme: light): daylight,
+ * lilac-cream and blush-butter — `dark:` variants stay off so hardcoded dark:
+ * classes don't clash with the light surface.
+ */
+
+/* Lilac × Cream — buttery cream surface, mauve accent. Soft, light. */
+[data-theme="lilac-cream"] {
+  --background: 56 80% 95%;
+  --foreground: 298 30% 25%;
+  --card: 56 95% 97%;
+  --card-foreground: 298 30% 25%;
+  --popover: 56 95% 97%;
+  --popover-foreground: 298 30% 25%;
+  --primary: 298 35% 45%;
+  --primary-foreground: 56 95% 97%;
+  --secondary: 56 60% 90%;
+  --secondary-foreground: 298 30% 25%;
+  --muted: 56 50% 88%;
+  --muted-foreground: 298 18% 40%;
+  --accent: 298 30% 85%;
+  --accent-foreground: 298 30% 25%;
+  --destructive: 0 74% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 60% 30%;
+  --success-foreground: 56 95% 97%;
+  --warning: 38 92% 30%;
+  --warning-foreground: 56 95% 97%;
+  --border: 298 20% 80%;
+  --input: 298 20% 80%;
+  --ring: 298 35% 45%;
+  --chart-1: 298 40% 46%;
+  --chart-2: 142 60% 30%;
+  --chart-3: 38 92% 30%;
+  --chart-4: 56 80% 24%;
+  --chart-5: 200 70% 36%;
+  --sidebar: 56 70% 93%;
+  --sidebar-foreground: 298 30% 25%;
+  --sidebar-border: 298 20% 80%;
+  --sidebar-accent: 298 30% 88%;
+  --sidebar-accent-foreground: 298 30% 25%;
+  color-scheme: light;
+}
+
+/* Blush × Morning Butter — golden butter surface, dusty rose accent.
+   Warm, soft, slightly retro. */
+[data-theme="blush-butter"] {
+  --background: 45 80% 93%;
+  --foreground: 347 50% 25%;
+  --card: 45 100% 97%;
+  --card-foreground: 347 50% 25%;
+  --popover: 45 100% 97%;
+  --popover-foreground: 347 50% 25%;
+  --primary: 347 70% 46%;
+  --primary-foreground: 45 100% 97%;
+  --secondary: 45 70% 86%;
+  --secondary-foreground: 347 50% 25%;
+  --muted: 45 60% 85%;
+  --muted-foreground: 347 30% 40%;
+  --accent: 347 50% 85%;
+  --accent-foreground: 347 50% 25%;
+  --destructive: 0 74% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 60% 29%;
+  --success-foreground: 45 100% 97%;
+  --warning: 38 92% 30%;
+  --warning-foreground: 45 100% 97%;
+  --border: 347 30% 78%;
+  --input: 347 30% 78%;
+  --ring: 347 70% 46%;
+  --chart-1: 347 70% 46%;
+  --chart-2: 142 60% 29%;
+  --chart-3: 38 92% 30%;
+  --chart-4: 280 60% 50%;
+  --chart-5: 200 70% 36%;
+  --sidebar: 45 70% 90%;
+  --sidebar-foreground: 347 50% 25%;
+  --sidebar-border: 347 30% 78%;
+  --sidebar-accent: 347 50% 88%;
+  --sidebar-accent-foreground: 347 50% 25%;
+  color-scheme: light;
+}
+
+/* DevPilot Daylight — the day shift, re-lit. Additive: `:root` (DevPilot Light)
+   is untouched.
+
+   DevPilot Light's defect is measurable, not a matter of taste: its white card
+   on a 97%-lightness page is a 1.06 contrast step, so cards, kanban columns and
+   panels all float on one flat plane, with a 1.36 border as the only separator.
+   Daylight rebuilds the surface ladder instead of darkening text (Light's text
+   already measures 16.7:1 — the ink was never the problem).
+
+   The metaphor is porcelain: warm cream paper under white index cards. The
+   first cut shipped on a cool blue-grey hue (~220°) that fixed the contrast
+   defect but read as steel, not paper — this retint carries every neutral
+   into the warm band (~30–38°) while holding the exact ladder byte-for-byte
+   in spirit: same shape, warm hue.
+
+     chip 86%  →  page 90%  →  inset 93%  →  card 100%
+
+   Four levels, not two. `secondary` (86%) is the page-level chip, sitting below
+   the desk; `muted` (93%) is the inset *inside* a card — table headers, evidence
+   blocks, code panes — and is what the shared `bg-muted/30` kanban lane resolves
+   to, so a lane reads as its own panel and the white cards rest visibly on it.
+   Depth is background steps plus border strength only; there is no elevation
+   token and none is introduced.
+
+   The accent resolves a real tension. `--primary` is both `bg-primary` (needs
+   AA under `--primary-foreground`) and `text-primary` for links (needs AA on
+   page and card), which caps its luminance and is what pushed Light's accent to
+   a burnt #C4560C. Rather than trade contrast away, Daylight buys chroma with
+   hue: at a fixed luminance ceiling, shifting off brown-orange (21°) toward
+   vermilion (17°) drops the green channel, so the same ratio buys a far more
+   saturated color — #B93704, AA on both surfaces (darkened two points off the
+   blue-grey cut's #C33A04 to hold that margin against the lighter warm page).
+   `--ring` is unbound by text contrast and carries the brighter true signal
+   orange (#F25202).
+
+   The role spectrum is spread across both axes, as wide as AA on white allows:
+   blue 43% and violet 50% read bright, green 22% and amber 29% read deep, so QA
+   green and DevOps amber are no longer two similarly-weighted dark blobs. (Both
+   were nudged two points darker than the blue-grey cut so their /10 tint chips —
+   see `gallery-meta.ts` — still clear AA on the warmer, higher-luminance page.) */
+[data-theme="daylight"] {
+  --background: 38 34% 90%;
+  --foreground: 30 30% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 30 30% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 30 30% 12%;
+  --primary: 17 96% 37%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 38 30% 86%;
+  --secondary-foreground: 30 30% 14%;
+  --muted: 38 34% 93%;
+  --muted-foreground: 32 16% 38%;
+  --accent: 38 32% 84%;
+  --accent-foreground: 30 30% 12%;
+  --destructive: 356 76% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 158 94% 22%;
+  --success-foreground: 0 0% 100%;
+  --warning: 31 98% 28%;
+  --warning-foreground: 0 0% 100%;
+  --border: 36 26% 72%;
+  --input: 36 26% 68%;
+  --ring: 20 98% 48%;
+
+  --chart-1: 219 94% 43%; /* blue — PM */
+  --chart-2: 158 94% 22%; /* green — QA */
+  --chart-3: 31 98% 29%; /* amber — DevOps */
+  --chart-4: 266 80% 50%; /* violet — Engineer */
+  --chart-5: 354 76% 40%; /* red — Security */
+
+  --sidebar: 38 32% 87%;
+  --sidebar-foreground: 30 30% 12%;
+  --sidebar-border: 36 26% 72%;
+  --sidebar-accent: 38 32% 82%;
+  --sidebar-accent-foreground: 30 30% 12%;
+  color-scheme: light;
+}
+
+/* Map CSS vars into Tailwind v4 @theme so utilities like bg-background work. */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans:
+    var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono:
+    var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    monospace;
+  --font-display:
+    var(--font-bricolage), "Bricolage Grotesque", var(--font-inter), ui-sans-serif, system-ui,
+    sans-serif;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html,
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar — subtle, like Vercel dashboard. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* Focus rings — uniform across surfaces. Form fields (input/textarea/select)
+   and the cmdk command input are excluded; they own their own focus styling
+   (border color + per-component ring) so the blanket outline doesn't paint
+   a noisy box on top. */
+*:focus-visible:not(input):not(textarea):not(select):not([cmdk-input]) {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Radix data-state animations (slide-in drawer, fade dialogs). */
+@keyframes devpilot-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes devpilot-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes devpilot-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes devpilot-slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes devpilot-slide-in-bottom {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes devpilot-zoom-in {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes devpilot-zoom-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+}
+
+[data-state="open"][data-side="right"],
+[data-state="open"].slide-in-from-right {
+  animation: devpilot-slide-in-right 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-state="closed"][data-side="right"],
+[data-state="closed"].slide-out-to-right {
+  animation: devpilot-slide-out-right 180ms cubic-bezier(0.7, 0, 0.84, 0);
+}
+[data-state="open"].fade-in-0 {
+  animation: devpilot-fade-in 150ms ease-out;
+}
+[data-state="closed"].fade-out-0 {
+  animation: devpilot-fade-out 120ms ease-in;
+}
+[data-state="open"].zoom-in-95 {
+  animation: devpilot-zoom-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-state="closed"].zoom-out-95 {
+  animation: devpilot-zoom-out 120ms cubic-bezier(0.7, 0, 0.84, 0);
+}
+[data-state="open"].slide-in-from-bottom-2 {
+  animation: devpilot-slide-in-bottom 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Reduced motion (U6) ────────────────────────────────────────────────
+ * Hard global guard: with the OS "reduce motion" setting on, NOTHING moves —
+ * not the Radix data-state animations above, not Tailwind's animate-ping/
+ * pulse/spin utilities, not smooth scrolling. The dp-anim-* brand motion is
+ * additionally opt-in via its own motion-safe block below, so reduced-motion
+ * users get its designed static fallback frames.
+ *
+ * Durations collapse to 1ms instead of `animation: none` so code waiting on
+ * animationend/transitionend (Radix presence unmounts) still fires — the
+ * animation resolves to its final frame instantly rather than never running.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Disable text selection on chrome elements. */
+.chrome-no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Inter is loaded via next/font (see app/layout.tsx); tune its tracking. */
+@layer base {
+  body {
+    letter-spacing: -0.01em;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ─── Brand motion (landing / auth) ──────────────────────────────────────
+ * Keyframes for the marketing surfaces: the etymology-diagram hero's baton
+ * chip, staggered section reveals, and the board vignette's card-in-flight.
+ * Every consumer gates playback behind the motion-safe pattern below, so
+ * prefers-reduced-motion users get the resolved final frame.
+ */
+/* Travel bar A (crew), change lanes in the exchange zone, finish on bar B.
+   The two bars sit at different y offsets, so the mid-travel lane drop reads
+   as the handoff. Split across two elements so both axes stay transform-only
+   (compositor work, no per-frame layout) while keeping independent easing:
+   the track carries the X leg (its own width equals the lane, so percentage
+   travel matches the old container-relative `left`), the chip carries the Y
+   drop and the fade. */
+@keyframes dp-baton-travel {
+  0% {
+    transform: translateX(0);
+  }
+  92%,
+  100% {
+    transform: translateX(calc(100% - 18px));
+  }
+}
+@keyframes dp-baton-lane {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  44% {
+    transform: translateY(0);
+  }
+  56% {
+    transform: translateY(var(--dp-lane-drop, 8px));
+  }
+  92% {
+    transform: translateY(var(--dp-lane-drop, 8px));
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(var(--dp-lane-drop, 8px));
+    opacity: 0;
+  }
+}
+@keyframes dp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes dp-drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+}
+@keyframes dp-bar-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes dp-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Static fallback: the baton rests in the exchange zone. Motion-safe users
+   see it travel the relay instead (animation-fill-mode both keeps it hidden
+   through the start delay; the animated transform overrides these resting
+   transforms while it fills). */
+.dp-baton-track {
+  transform: translateX(46%);
+}
+.dp-baton-chip {
+  left: 0;
+  top: 0;
+  transform: translateY(var(--dp-lane-drop, 8px));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dp-anim-rise {
+    animation: dp-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--dp-delay, 0s);
+  }
+  .dp-anim-drift {
+    animation: dp-drift 7s ease-in-out infinite;
+  }
+  .dp-anim-bar {
+    animation: dp-bar-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--dp-delay, 0s);
+  }
+  .dp-anim-pulse {
+    animation: dp-pulse-dot 2.4s ease-in-out infinite;
+  }
+  .dp-baton-track {
+    animation: dp-baton-travel 6.5s cubic-bezier(0.5, 0.05, 0.3, 0.95) 1.4s infinite both;
+  }
+  .dp-baton-chip {
+    animation: dp-baton-lane 6.5s cubic-bezier(0.5, 0.05, 0.3, 0.95) 1.4s infinite both;
+  }
+}
