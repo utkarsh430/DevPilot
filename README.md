@@ -31,3 +31,18 @@ The result is a system where you describe work as tickets on a board, and a crew
 
 The name is **dev** + **pilot**: agents that fly your development work across a kanban board, with you holding the controls.
 
+### What makes it a different kind of system
+
+| Ordinary agent tooling                                             | DevPilot                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agents coordinate through in-memory messages that die with the run | **The board is the orchestration substrate.** Agents coordinate by moving tickets and writing comments, so every hand-off is durable, inspectable and resumable by construction.                                                                     |
+| A crash, a restart or a closed laptop loses the work               | **Every iteration and tool call is a checkpointed durable step.** A run can wait days on a human reply and resume from the exact step; the runner re-queues any job caught mid-flight on shutdown.                                                   |
+| Cost is discovered on the invoice                                  | **Hard ceilings are enforced before spend**: per-run budgets re-checked at every step boundary, a per-tenant cost-velocity circuit breaker, and recursion / fan-out / total-agent caps on every spawn.                                               |
+| "Done" means the model said so                                     | **Done is gated.** Producers cannot hand off a failing build, cannot hand off an empty delivery, reviewers cannot finish without recording a verdict, and safety-critical tickets need a human to approve the final move.                            |
+| A stuck job needs a human with a database console                  | **Four independent self-healing layers** (ticket reconciler, orphan reaper, dispatch rescue, and a supervisor that lives outside the scheduler) detect stranded work from database facts, repair it, and keep a ledger that flags recurring defects. |
+| You find out what the agent did by reading its chat log            | **The trace is the product**: a per-run waterfall of agent → tool → model steps with cost and latency, replayable from any step, exportable as an audit-grade PDF.                                                                                   |
+| Everything the model reads is treated as an instruction            | **Untrusted content is fenced as data everywhere it enters a prompt** — tool output, peer-agent hand-offs, repository files, operator comments — and dangerous actions pause on a human gate.                                                        |
+| The vendor SDK is wired through the codebase                       | **One pluggable `Runner` interface.** The default runs on your own Claude subscription with the full Claude Code toolset; an API runner is a switch away; a custom OpenAI-compatible endpoint is a per-project setting.                              |
+
+---
+
