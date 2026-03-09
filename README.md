@@ -46,3 +46,27 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 
 ---
 
+## How it works
+
+```
+                 ┌──────────────┐    dispatch    ┌──────────────────┐   claim   ┌────────────────────┐
+  you file a ──▶ │  Board       │ ─────────────▶ │  Durable engine  │ ────────▶ │  Runner            │
+  ticket         │  (tickets,   │                │  (checkpointed   │           │  isolated git      │
+                 │   comments,  │ ◀───────────── │   steps, gates,  │ ◀──────── │  workspace +       │
+                 │   relations) │  move / comment│   reapers)       │  result   │  claude -p + tools │
+                 └──────────────┘                └──────────────────┘           └────────────────────┘
+                        ▲                                  │
+                        │   verdicts, hand-offs, questions  │  trace, cost, verification record
+                        └──────────────────────────────────┘
+```
+
+1. **File work on the board.** A ticket carries a title, acceptance criteria, attachments, dependencies (`blocked_by`, `builds_on`, sub-issues) and, optionally, a safety-critical flag. Moving it to **Ready** is what starts the machine.
+2. **The engine dispatches it as a durable run.** Role selection, WIP limits, budget checks and spawn caps happen first — refusals are written back to the ticket as system comments, never swallowed.
+3. **A runner executes the step** in an isolated per-ticket git workspace, on your Claude subscription (`claude -p`) or through the API runner, with ten board tools exposed over MCP: move the ticket, comment, hand off context, file a follow-up ticket, ask a human, request a secret, spawn a sub-agent, query the project database, log a conflict.
+4. **Roles hand the ticket to each other.** PM scopes → Engineer builds → QA breaks → Security clears; a rejection sends it back (bounded by a retry ceiling); a question parks it in **Input Required** until you answer, and your reply is the event that resumes it.
+5. **Quality gates sit on the transitions.** A producer's hand-off is refused if the build fails or nothing was committed; a reviewer who reaches a verdict and forgets to record it is prompted to do so before the run can end.
+6. **Approved work lands.** The ticket's branch is rebased and squash-merged onto the project's integration branch by a serialised landing pipeline; conflicts spawn a merger agent; dependents are released the moment their parent's code is actually on the branch.
+7. **Everything is observable and self-healing.** Each step is a span with its cost; stranded tickets, lost dispatch events and dead runs are detected from database state and repaired, and a supervisor that does not depend on the scheduler watches the healers themselves.
+
+---
+

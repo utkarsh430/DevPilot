@@ -104,3 +104,69 @@ Every layer prefers open source; paid services are used only where there's no re
 
 ---
 
+## 3. System Components
+
+### 3.1 The LLM Adapter Layer (F-INT-06)
+
+All model calls go through the Vercel AI SDK so the rest of DevPilot never imports a vendor SDK directly. This is what makes DevPilot model-agnostic.
+
+```ts
+// llm/model.ts
+import { anthropic } from "@ai-sdk/anthropic";
+// swappable: import { openai } from "@ai-sdk/openai";
+
+// Model IDs are illustrative; the as-built locked IDs (apps/web/lib/llm/models.ts)
+// are claude-sonnet-4-6 / claude-opus-4-7 / claude-haiku-4-5-20251001.
+export const models = {
+  default: anthropic("claude-sonnet-4-6"), // workhorse
+  heavy: anthropic("claude-opus-4-7"), // architect/reasoning
+  cheap: anthropic("claude-haiku-4-5-20251001"), // dispatcher/routing
+};
+// Cost-aware routing (NFR): pick the cheapest model that passes the task's eval bar.
+```
+
+The adapter centralizes token counting and cost accounting. **As-built correction (2026-07-05):** it does _not_ yet centralize retries-with-backoff, timeouts, or graceful fallback to a secondary model — those were planned but are not implemented (the adapter relies on the AI SDK's defaults; timeouts are caller-imposed; there is no fallback chain). See `docs/IMPLEMENTATION_STATUS.md`.
+
+### 3.2 The Agent Harness (F-ORC-01, F-CAP-01)
+
+The harness is the loop from first principles — kept thin and owned in-house so DevPilot controls checkpointing and tracing. (Mastra or the Claude Agent SDK can be adopted later as an accelerator; the interface below stays the same.)
+
+```ts
+// Each iteration is a durable STEP so the engine can resume mid-loop.
+async function agentStep(ctx: RunContext): Promise<StepResult> {
+  const messages = await loadHistory(ctx.runId); // from Postgres
+  const skills = await selectSkills(ctx, messages); // progressive load (F-CAP-05)
+  const res = await generateText({
+    model: pickModel(ctx),
+    system: buildSystemPrompt(ctx.agent, skills),
+    tools: ctx.tools, // function defs
+    messages,
+  });
+  await persistStep(ctx.runId, res); // checkpoint (F-ORC-08)
+  if (res.finishReason === "tool-calls") {
+    return { kind: "tool_calls", calls: res.toolCalls }; // engine runs tools as child steps
+  }
+  if (needsHuman(res)) return { kind: "await_human" }; // → Input Required (F-ORC-07)
+  return { kind: "done", output: res.text };
+}
+```
+
+The harness never runs the loop in a single long-lived process. Each iteration and each tool call is a **durable step** owned by the engine (§3.3). That is what survives restarts and human pauses.
+
+**Scope of that rule (clarified 2026-08-03).** It is about **agent state**, not about long-lived processes as such.
+What must never live in memory is anything whose loss would lose work: an agent's iteration position, its tool results, its checkpoints, and its human pauses.
+Those belong to the durable engine so a crash or a multi-day wait resumes from the exact step.
+
+It is _not_ a prohibition on the runner having resident loops - it already has five (`pullLoop`, `cancelLoop`, `devServerPullLoop`, `takeoverPullLoop`, `cleanupLoop`), and one of them, the **project supervisor** (`apps/runner/src/supervisor-loop.ts`), exists precisely _because_ the durable engine can stop.
+Every recovery mechanism in DevPilot is an Inngest cron, so they share one point of failure; when it wedged on 2026-08-03 all of them died together and the board sat deadlocked for seven hours with no alarm.
+A supervisor scheduled by the thing it supervises is not a supervisor.
+
+The distinction that keeps both statements true is **statelessness between iterations**: the supervision loop carries no knowledge of the board from one tick to the next.
+Every decision is re-derived from the database on each pass (`lib/engine/supervisor-store.ts`), and the only thing held in memory is a poll-backoff counter - rate limiting, not knowledge.
+A resident loop that accumulated board state would be the rule being broken; one that re-reads everything each pass is not.
+
+**As-built correction (2026-07-09):** `buildSystemPrompt(agent, skills)` above is illustrative.
+The real seam is `composeRoleSystemPrompt(config, skills, hasTicket)` (`apps/web/lib/roles/compose-prompt.ts`), and it is composed once per dispatch rather than once per iteration.
+It appends two fenced, idempotent layers to the role's stored `systemPrompt`: the reviewer-awareness note (§5.1's QA loop, gated on the run being ticket-bound _and_ the role's `onSuccessStatus` being `in_review`), then the installed-skill fence (§3.6).
+The third argument exists because composition cannot infer it: a ticket-less run (a supervisor's ad-hoc child spawn, a replay of a ticket-less original) passes `false` so it is never told about a review gate it can never reach, and the ticket-less headless surfaces of §3.11 (agents-as-APIs, the OpenAI-compat shim, the widget) sidestep the seam entirely for the same reason.
+
