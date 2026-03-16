@@ -1,0 +1,15 @@
+{
+  "$comment": "Phase 1 / M1 Wave 2 — claude-code MCP config that exposes DevPilot's board tools (devpilot_comment, devpilot_handoff, devpilot_move_ticket, devpilot_request_human, …; the catalog itself lives in apps/runner/src/mcp/server.ts). Wired into `claude -p --mcp-config apps/runner/src/mcp/mcp-config.example.json` by Wave 2C. Transport is stdio: claude-code spawns `node dist/mcp/server.js` (relative to the runner's cwd) and the relay forwards each MCP tools/call to the engine's /api/runners/tools/* routes using the runner-registration key. Rationale for stdio over HTTP is in the header comment of apps/runner/src/mcp/server.ts.",
+  "mcpServers": {
+    "devpilot-board": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./dist/mcp/server.js"],
+      "env": {
+        "LOCAL_CC_ENGINE_URL": "${LOCAL_CC_ENGINE_URL:-http://localhost:3000}",
+        "DEVPILOT_RUNNER_REGISTRATION_KEY": "${DEVPILOT_RUNNER_REGISTRATION_KEY}",
+        "DEVPILOT_RUNNER_ID": "${DEVPILOT_RUNNER_ID:-}"
+      }
+    }
+  }
+}
