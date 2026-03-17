@@ -170,3 +170,45 @@ The real seam is `composeRoleSystemPrompt(config, skills, hasTicket)` (`apps/web
 It appends two fenced, idempotent layers to the role's stored `systemPrompt`: the reviewer-awareness note (§5.1's QA loop, gated on the run being ticket-bound _and_ the role's `onSuccessStatus` being `in_review`), then the installed-skill fence (§3.6).
 The third argument exists because composition cannot infer it: a ticket-less run (a supervisor's ad-hoc child spawn, a replay of a ticket-less original) passes `false` so it is never told about a review gate it can never reach, and the ticket-less headless surfaces of §3.11 (agents-as-APIs, the OpenAI-compat shim, the widget) sidestep the seam entirely for the same reason.
 
+### 3.3 Durable Execution / Orchestration (F-ORC-08, F-ORC-09)
+
+This is the most important and most under-built layer in naive agent platforms.
+
+**Recommendation:** start with **Inngest** (free tier, serverless-native, zero ops, durable step functions that fit Vercel perfectly). For the OSS-purist / self-hosted path at scale, **Trigger.dev** (Apache 2.0, self-hostable, built for long-running tasks) is the drop-in alternative. Both model a run as a sequence of durable steps with automatic retry and replay.
+
+```ts
+// orchestration/run-agent.ts (Inngest example)
+export const runAgent = inngest.createFunction(
+  { id: "run-agent", concurrency: { limit: 50, key: "event.data.tenantId" } }, // F-ORC-10
+  { event: "agent/run.requested" },
+  async ({ event, step }) => {
+    let state = await step.run("init", () => initRun(event.data));
+
+    for (let i = 0; i < MAX_ITERS; i++) {
+      // F-ORC-06 hard loop cap
+      const r = await step.run(`think-${i}`, () => agentStep(state));
+
+      if (r.kind === "done") return step.run("finish", () => finish(state, r));
+      if (r.kind === "await_human") {
+        await moveTicket(state.ticketId, "input_required"); // F-BRD-02
+        // Durable wait — process exits; resumes on the human's reply event (F-ORC-07/F-BRD-11)
+        const reply = await step.waitForEvent("human-reply", {
+          match: "data.runId",
+          timeout: "7d",
+        });
+        state = applyHumanReply(state, reply);
+        continue;
+      }
+      // Run tool calls as parallel child steps (F-ORC-04)
+      const results = await Promise.all(
+        r.calls.map((c) => step.run(`tool-${i}-${c.id}`, () => runTool(state, c))),
+      );
+      state = appendToolResults(state, results);
+    }
+    return moveTicket(state.ticketId, "failed"); // max iters → dead-letter
+  },
+);
+```
+
+Why this matters: `step.run` results are persisted, so a crash mid-run replays only un-completed steps; `waitForEvent` lets a run sleep for up to days at `Input Required` with no compute cost — the offline guarantee.
+
