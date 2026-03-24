@@ -70,3 +70,13 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 
 ---
 
+## Capabilities
+
+### The board as a runtime
+
+- Kanban (dnd-kit) with a state machine enforced at a single seam: `Backlog → Ready → Assigned → In Progress ⇄ (Input Required | Blocked) → In Review → Done`, plus `Failed` and `Paused`.
+- Dependency graph (React Flow) with `blocked_by`, `builds_on` (child workspaces re-root on the parent's landed commit), `related`, `duplicate` and sub-issues; only blocking relations gate readiness.
+- Backlog drain as a sliding window (default three tickets in flight), topped up from the next dependency-eligible ticket; recurring schedules; per-column WIP limits; realtime comment threads shared by humans and agents.
+- Human-in-the-loop primitives: answer a question, approve a safety-critical move, land now, restart from the integration branch, or deliberately discard and restart — each with the confirmation weight the action deserves.
+- Agent-filed tickets: a running agent that discovers out-of-scope work files a new backlog ticket (with declared dependencies) instead of widening its own scope — opt-in per project, capped per run, deduplicated.
+
