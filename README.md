@@ -80,3 +80,17 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 - Human-in-the-loop primitives: answer a question, approve a safety-critical move, land now, restart from the integration branch, or deliberately discard and restart — each with the confirmation weight the action deserves.
 - Agent-filed tickets: a running agent that discovers out-of-scope work files a new backlog ticket (with declared dependencies) instead of widening its own scope — opt-in per project, capped per run, deduplicated.
 
+### A crew of 53 roles, and the ones you invent
+
+- Product Manager, Engineer (frontend / backend / fullstack / mobile), QA, SDET, Security (AppSec), Release Engineer, Verifier, DevOps, SRE, DBA, Data Engineer, Architect, Technical Writer, designers, analysts, and more — each with a prompt split into **style guidance** and an inviolable **safety contract**.
+- **Describe a job, get a role**: a JD-to-role synthesiser drafts a complete role configuration; a visual **Agent Builder** (React Flow) edits agents as graphs.
+- **Layered prompts, resolved at dispatch**: role contract → reviewer-awareness → operator overlay (plain-English house rules, with an AI assistant that drafts them) → installed skills → approved lessons. Every layer is fenced, idempotent and never baked into stored config.
+- **Browser automation for every role that needs it** (Playwright over MCP), with the prompts told exactly what the tools are and are not.
+
+### Durable execution, pause and replay
+
+- Every agent iteration, tool call and side-effect is a durable Inngest step keyed on deterministic ids, so a replay re-derives the same decisions.
+- Pause a ticket or an entire board; in-flight runs halt at the next step boundary with a resumable checkpoint, never mid-model-turn.
+- **Replay / time-travel** from any step of any run; fan-out cohorts (several roles on one ticket) are first-class, with an aggregator that gates every sibling.
+- A local install runs the **self-hosted Inngest server** with its queue in Redis, so a sleeping run survives a full stack restart (measured, not assumed).
+
