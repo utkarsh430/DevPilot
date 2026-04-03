@@ -212,3 +212,79 @@ export const runAgent = inngest.createFunction(
 
 Why this matters: `step.run` results are persisted, so a crash mid-run replays only un-completed steps; `waitForEvent` lets a run sleep for up to days at `Input Required` with no compute cost — the offline guarantee.
 
+### 3.4 Work Board / Ticket Engine (F-BRD-\*)
+
+The board is a **view over a ticket state machine**. Tickets are the orchestration substrate — agents pass work as tickets and comments, not in-memory messages.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Backlog
+    Backlog --> Ready: refined + acceptance criteria
+    Ready --> Assigned: dispatcher routes
+    Assigned --> InProgress: agent picks up
+    InProgress --> InputRequired: needs human
+    InputRequired --> InProgress: human replies
+    InProgress --> Blocked: dependency unmet
+    Blocked --> InProgress: dependency done
+    InProgress --> InReview: work complete
+    InReview --> InProgress: QA / Security reject
+    InReview --> Done: gates pass
+    InProgress --> Failed: max retries
+    Done --> [*]
+    Failed --> [*]
+```
+
+Transitions are events. A comment from a human on an `Input Required` ticket emits `human-reply`, which the durable engine is waiting on. The **Dispatcher agent** subscribes to `Ready` tickets and assigns them by matching ticket type to a role's capabilities (F-BRD-06). Backward transitions (F-BRD-09) are first-class — QA/Security agents can move a ticket back to `InProgress` with a comment explaining why, creating the quality loop.
+
+### 3.5 Supervisor Trees & Dynamic Spawning (F-SUP-\*)
+
+Modeled on the actor/supervisor pattern (Erlang/OTP). A supervisor is itself an agent whose "tools" include `spawn_agent`, `monitor`, and `terminate`. Spawning emits a new `agent/run.requested` event to the same durable engine, so children are ordinary durable runs linked by `parent_run_id`.
+
+```ts
+// Guardrails enforced BEFORE any spawn (NFR — cost safety)
+function assertCanSpawn(parent: RunContext) {
+  if (parent.depth >= MAX_DEPTH) throw new SpawnDenied("max depth"); // F-SUP guardrail
+  if (globalAgentCount() >= MAX_TOTAL) throw new SpawnDenied("global cap");
+  if (parent.children >= MAX_FANOUT) throw new SpawnDenied("fan-out cap");
+  if (parent.budgetRemaining <= MIN_BUDGET) throw new SpawnDenied("budget");
+  if (detectCycle(parent)) throw new SpawnDenied("cycle");
+}
+
+function spawnChild(parent: RunContext, spec: AgentSpec) {
+  assertCanSpawn(parent);
+  const childBudget = allocate(parent, spec); // budget INHERITANCE: child ⊆ parent
+  return inngest.send({
+    name: "agent/run.requested",
+    data: {
+      ...spec,
+      parentRunId: parent.runId,
+      depth: parent.depth + 1,
+      budget: childBudget,
+    },
+  });
+}
+```
+
+- **Supervisor auto-scaling (F-SUP-04):** a monitor job watches queue depth / WIP / latency and spawns additional supervisor or worker agents within caps, then **reaps idle agents** (F-SUP-06) and runs **orphan cleanup** (F-SUP-09) on a schedule.
+- **Supervision strategies (F-SUP-07):** on child failure — `restart` (re-run from last checkpoint), `let-it-crash` (mark failed, continue siblings), or `escalate` (bubble to parent / human swimlane).
+- **Cascade-kill:** terminating a supervisor reaps its whole subtree via `parent_run_id`.
+
+> The single most important safety property in the whole system: **no spawn without depth + total + budget checks.** Uncapped self-spawning is the #1 way these systems run away.
+
+### 3.6 Skills System (F-CAP-02, F-CAP-05)
+
+A skill is a versioned bundle stored in Postgres/Storage: a manifest + instruction body + optional scripts/resources. Agents see only one-line descriptions until a skill is loaded (progressive disclosure keeps context and cost down).
+
+```yaml
+# skill.yaml
+name: appsec-review
+version: 1.2.0
+description: "Review a diff for injection, secrets, and auth flaws (OWASP Top 10)."
+triggers: ["security review", "audit this code", "pre-merge security"]
+requires_tools: ["read_file", "run_semgrep"]
+body: ./SKILL.md # full procedure, loaded on demand
+resources: ["./owasp-checklist.md"]
+```
+
+Selection: the harness embeds skill descriptions, runs a cheap relevance pass (or vector match against `triggers`), and injects only the matched skill bodies for that turn.
+
