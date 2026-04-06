@@ -288,3 +288,45 @@ resources: ["./owasp-checklist.md"]
 
 Selection: the harness embeds skill descriptions, runs a cheap relevance pass (or vector match against `triggers`), and injects only the matched skill bodies for that turn.
 
+### 3.7 Knowledge / Data Layer (F-DAT-\*)
+
+Two distinct access patterns, both scoped per agent (F-DAT-07):
+
+- **Retrieval (RAG):** KBs and vector connections. Managed KBs ingest files → chunk → embed (via the AI SDK embeddings) → store in **pgvector** (default) or Pinecone. Relevant chunks are auto-injected.
+- **Query-as-tool (text-to-SQL):** the agent gets a `query_db` tool. Guardrails are mandatory: a **read-only DB role**, table allow-list, mandatory `LIMIT`, statement timeout, and the generated SQL is logged to the trace.
+
+```sql
+-- Per-agent scoping enforced at the data layer via Postgres RLS
+create policy agent_kb_scope on kb_chunks
+  using (kb_id = any (current_agent_kb_ids()));
+```
+
+Hybrid search (F-DAT-06, P2) combines pgvector similarity with `tsvector` keyword + metadata filters.
+
+### 3.8 Observability (F-OBS-\*)
+
+- **Langfuse** is the trace backbone. Every run, agent step, tool call, LLM call, and retrieval is a span in a trace tree, with token + cost + latency on each. This powers the **Run Inspector** (waterfall) and **cost dashboards**.
+- **Replay / time-travel (F-OBS-02):** because steps are checkpointed (§3.3) and traced, a run can be re-dispatched from any step with modified inputs.
+- **Evals (F-OBS-04):** **Promptfoo** for assertion + LLM-as-judge suites in CI; acceptance criteria on tickets double as eval cases. Langfuse datasets capture failed runs to grow the eval set.
+- **Sentry** for code-level errors; **PostHog** for product analytics.
+- Instrumentation standard: **OpenTelemetry**, so the trace data isn't locked to one vendor.
+
+### 3.9 Auth, Multi-Tenancy & Security
+
+- **Supabase Auth** for auth/users/orgs by default (already in the stack, OSS, free, keeps identity in the same Postgres secured by RLS). **Clerk is an optional swap** if richer org/team/RBAC UX is needed later; auth sits behind a thin internal wrapper so the swap stays cheap.
+- **Multi-tenancy:** every row carries `tenant_id`; **Postgres Row-Level Security** enforces isolation, including vector chunks (no cross-tenant retrieval).
+- **Secrets:** tool/DB credentials encrypted at rest, injected only at tool-execution time, never placed in prompts or URLs.
+- **Sandboxing:** untrusted code/tools run in **E2B** microVMs with no ambient network/secret access.
+- **Approval gates:** tools tagged `dangerous: true` (send money, delete data, change permissions) pause the run into `Input Required` for human sign-off, regardless of what any tool/data output "instructs."
+- **Untrusted content rule:** all tool/retrieval/web output is treated as data, never as instructions to the agent.
+
+### 3.10 Billing (F-PLT-06)
+
+Stripe metered billing keyed to usage events (tokens, completed tickets, agent-minutes) emitted by the engine. Per-tenant budgets and ceilings are enforced in the adapter (§3.1) and supervisor (§3.5) before spend occurs.
+
+### 3.11 Platform Surface (F-PLT-01/02/03)
+
+- **Agents-as-APIs:** each published agent gets `POST /v1/agents/{id}/runs` (async, returns a run id) + an SSE streaming endpoint.
+- **OpenAI-compatible:** a `/v1/chat/completions` shim maps to an agent so existing OpenAI clients work with a one-line base-URL change.
+- **Embeddable widget:** _(as-built: an **iframe** page at `/widget/[agentId]` with a scoped token + SSE, not a standalone JS `<script>` bundle/React component. Domain-allowlist hardening is deferred — `frame-ancestors _`.)\* opens a streaming session against the agent endpoint.
+
