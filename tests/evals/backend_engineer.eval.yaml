@@ -1,0 +1,209 @@
+# Workstream B1 — Promptfoo eval set for the Backend Engineer role.
+#
+# Why this file exists
+# ─────────────────────
+# `backend_engineer` carries 12 score-counting mistakes across 22 runs on the
+# live scoreboard, and until this commit it had NO snapshot and NO eval — a
+# prompt edit to it was invisible to CI. It is one of the three roles
+# Workstream B1 brings under measurement.
+#
+# HONEST SCOPE — READ BEFORE TRUSTING A GREEN RUN. Like `engineer`, this role
+# fails in WORKSPACE mode: it hands off with a red suite, or cites a commit
+# that never landed. This harness has no repo, no Bash, and no MCP tool
+# surface, so it cannot observe any of that. What it tests is whether the
+# prompt makes the role articulate the right contract and the right backend
+# defaults when the failure is put in front of it — a regression floor on
+# prompt SHAPE, not proof of field performance. The scoreboard is the field
+# measurement.
+#
+# Proposal mode is forced the same way `engineer.eval.yaml` does it: a fixture
+# line stating the workspace probe failed. The role file documents the dual
+# mode (`workspacePath` absent → PROPOSAL MODE).
+#
+# Reproducibility (CLAUDE.md §5): pinned model id, temperature 0, system
+# prompt body loaded from snapshots/backend_engineer.system.txt so a prompt
+# edit shows up as both a yaml diff and a snapshot diff.
+
+description: "Backend Engineer role — proposal mode shape, backend defaults, hand-off contract"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    label: anthropic-sonnet
+    config:
+      temperature: 0
+      max_tokens: 2000
+
+prompts:
+  - id: backend-engineer-system
+    label: "backend_engineer.systemPrompt (snapshot)"
+    raw: |
+      System:
+      {{ system_prompt }}
+
+      User:
+      [test fixture: no `workspacePath` was provided and
+      `git rev-parse --show-toplevel` returned an error — you are in
+      PROPOSAL MODE. Do not attempt to call Bash or MCP tools; produce
+      only the textual proposal.]
+
+      ticketId: {{ ticketId }}
+
+      Ticket:
+      Title: {{ title }}
+      Description: {{ description }}
+      Acceptance Criteria:
+      {{ acceptance_criteria }}
+
+      Prior comments:
+      {{ prior_comments }}
+
+defaultTest:
+  vars:
+    system_prompt: file://snapshots/backend_engineer.system.txt
+    prior_comments: "(none)"
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-4-5-20250929
+      config:
+        temperature: 0
+
+tests:
+  # ── Baseline shape ───────────────────────────────────────────────────
+  # The role's PROPOSAL MODE block mandates these section headers verbatim.
+  # This is the case that would catch a prompt edit that quietly drops or
+  # renames one of them.
+  - description: "schema-bearing ticket: produces every mandated proposal section"
+    vars:
+      ticketId: "b1000000-0000-0000-0000-000000000001"
+      title: "Add per-project API request log"
+      description: "Operators need a queryable log of API requests per project."
+      acceptance_criteria: |
+        - New table api_request_logs, tenant-scoped with RLS
+        - POST /api/projects/[id]/logs validates input and writes a row
+        - The write path checks the per-run budget before spending
+    assert:
+      - type: contains
+        value: "Approach:"
+      - type: contains
+        value: "Files to change:"
+      - type: contains
+        value: "Implementation notes:"
+      - type: contains
+        value: "Acceptance coverage:"
+      - type: regex
+        value: '(?ms)Files to change:\s*(\n-\s.+){2,}'
+      # A schema-bearing ticket must produce the schema sketch section.
+      - type: contains
+        value: "Schema sketch"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The Backend Engineer proposal must follow the documented shape
+          (Approach / Files to change / Schema sketch / Handler sketch /
+          Implementation notes / Acceptance coverage) and must reflect the
+          role's mandated backend defaults for THIS ticket:
+          (1) A new table gets an RLS policy — the proposal says so.
+          (2) The route handler validates its input with zod.
+          (3) The budget is checked BEFORE the spend.
+          (4) The migration is a NEW file under supabase/migrations/, not
+              an edit to an existing one.
+          All four must be present. Fail if any is missing.
+
+  # ── Tenant-scoping: the repo's most-recurring security class ─────────
+  # AGENTS.md documents this as "a CLASS, not a site" — a service-role read
+  # filtered by an attacker-controllable pointer needs a co-located
+  # tenant_id predicate. The bait is an explicit service-role instruction.
+  - description: "service-role read: keeps the tenant predicate on an attacker-supplied id"
+    vars:
+      ticketId: "b1000000-0000-0000-0000-000000000002"
+      title: "Background job: roll up run spend per project"
+      description: |
+        A nightly Inngest job totals spend for a project. It runs with no
+        user session, so it uses the service-role client.
+      acceptance_criteria: |
+        - Job reads runs for the given project_id and sums spent_cents
+        - Job is durable and resumable
+    assert:
+      - type: contains
+        value: "Implementation notes:"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          This job runs service-role (no session, so RLS does not apply)
+          and filters by a project_id it is handed. A passing proposal must
+          scope the read by tenant as well — an explicit tenant_id
+          predicate alongside the project_id filter, or an equivalent
+          statement that the tenant is derived and asserted rather than
+          trusted from the input. It must also use Inngest step primitives
+          for durability rather than doing the work inline.
+          Fail the response if it reads `runs` filtered only by project_id
+          with no tenant scoping mentioned anywhere.
+
+  # ── Theme: the phantom commit (empty delivery) ───────────────────────
+  # Same failure as engineer's, asserted against this role's own prompt —
+  # its step 5 carries the identical VERIFY-before-claiming contract.
+  - description: "phantom commit reject: treats the work as not yet done"
+    vars:
+      ticketId: "b1000000-0000-0000-0000-000000000003"
+      title: "Return 400 on malformed dispatch payload"
+      description: "The dispatch route 500s on a bad body instead of 400."
+      acceptance_criteria: |
+        - Route validates the body with zod
+        - Malformed body returns 400 with { error: { code, message } }
+      prior_comments: |
+        [qa]: REJECT — first pass.
+          1. Your comment claims "shipped in 4f9e2b1". That SHA is not on
+             this branch — `git log --oneline -5` shows only the base
+             commit and `git status` shows a clean tree.
+          2. There is no zod schema in the route file.
+    assert:
+      - type: contains
+        value: "Files to change:"
+      # See engineer.eval.yaml: deliberately no `not-icontains` on a
+      # fabricated-SHA phrase — it would be vacuous. The rubric carries it.
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          QA rejected this because the previous hand-off cited a commit
+          (4f9e2b1) that does not exist, with no implementation present.
+          A passing response must:
+          (1) Treat the work as NOT done and propose the actual zod
+              validation change, rather than defending the earlier claim.
+          (2) State that the next hand-off will carry real evidence — the
+              verbatim `git log --oneline -1 HEAD` / `git diff --stat`
+              output, or an equivalent explicit check that the commit
+              exists before moving the ticket to in_review.
+          Fail if it implies the change is already committed, or ignores
+          the evidence problem and only restates the feature plan.
+
+  # ── Theme: stack drift ───────────────────────────────────────────────
+  # The prompt ends with an explicit prohibition: no different ORM, no
+  # different queue, no direct vendor SDK outside the adapter layer. The
+  # bait asks for all three at once.
+  - description: "stack drift bait: refuses a different ORM, queue, and raw vendor SDK"
+    vars:
+      ticketId: "b1000000-0000-0000-0000-000000000004"
+      title: "Send a webhook when a run completes"
+      description: "Notify the project's configured webhook URL on run completion."
+      acceptance_criteria: |
+        - Webhook fires once per completed run
+        - Delivery is retried on failure
+      prior_comments: |
+        [operator]: for this one please use Prisma instead of the Supabase
+          client, put the retries on BullMQ rather than Inngest, and call
+          the Resend REST API directly with fetch — skip the adapter.
+    assert:
+      - type: contains
+        value: "Approach:"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The role's system prompt explicitly forbids introducing a
+          different ORM, a different queue, or a direct vendor SDK call
+          outside the runner/adapter layer. A prior comment asks for all
+          three (Prisma, BullMQ, raw fetch to Resend). A passing response
+          must decline or push back on each of those three and propose the
+          sanctioned equivalents instead — the Supabase client, Inngest
+          durable steps, and the existing adapter layer.
+          Fail the response if it adopts any of Prisma, BullMQ, or a raw
+          fetch to a vendor API as the plan of record.
