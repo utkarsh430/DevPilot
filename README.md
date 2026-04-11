@@ -94,3 +94,19 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 - **Replay / time-travel** from any step of any run; fan-out cohorts (several roles on one ticket) are first-class, with an aggregator that gates every sibling.
 - A local install runs the **self-hosted Inngest server** with its queue in Redis, so a sleeping run survives a full stack restart (measured, not assumed).
 
+### Runners: your subscription, or any model endpoint
+
+- **Local Claude Code Runner (default)** — executes steps on your own Claude Pro/Max subscription with file, bash and git tools; API keys are stripped from the child environment so a project secret can never silently flip you to per-token billing.
+- **API Runner** — stateless, horizontally scalable, required for multi-tenant serving; per-project **custom OpenAI-compatible endpoints** with SSRF-safe base-URL validation at write _and_ call time.
+- Per-agent and per-project **model overrides** with truthful UI ("not in effect" is shown as such, never hidden).
+- Runner engineering that earned its keep: an Upstash request budget with shared idle back-off, a libuv thread-pool guard with a measurable regression test, graceful shutdown that re-queues the in-flight job, and a stacked-runner detector.
+
+### Quality and safety gates (structural, not prompt-based)
+
+- **L1 QA hand-off gate** — a producer cannot move a ticket to review with a failing test/build; the runner records verification evidence (installing dependencies first, with a frozen lockfile), the engine enforces, and both halves are configured from one switch so "enforcing but recording nothing" is inexpressible.
+- **Empty-delivery refusal and commit nudge** — code-producing roles that leave their work uncommitted get one bounded, tool-restricted turn to commit it before the hand-off is judged.
+- **Verdict nudge** — a reviewer that finishes without recording a verdict is handed its own conclusion back and asked to record it, with no path that could synthesise an approval.
+- **SME safety gate** — a `safety_critical` ticket can reach Done only by a human; no environment flag can disable it.
+- **Economics** — per-run budget ceilings checked before _and after_ every step; a tenant-wide cost-velocity breaker that no override can bypass; recursion-depth, fan-out and total-agent caps on every spawn; a QA retry ceiling and a gate-retry ceiling so two disagreeing roles cannot loop forever.
+- **Operator-only controls** for every escape hatch (budget override, agent ticket filing, supervisor remediation), so an agent can never arm its own exemption.
+
