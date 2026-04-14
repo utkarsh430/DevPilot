@@ -1,0 +1,75 @@
+# Phase 1 / M12 — Promptfoo eval set for the Designer role.
+
+description: "Designer role — five-section spec contract"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    config:
+      temperature: 0
+      max_tokens: 2000
+
+prompts:
+  - id: designer-system
+    raw: |
+      System:
+      {{ system_prompt }}
+
+      User:
+      ticketId: {{ ticketId }}
+
+      Ticket:
+      Title: {{ title }}
+      Description: {{ description }}
+      Acceptance Criteria:
+      {{ acceptance_criteria }}
+
+defaultTest:
+  vars:
+    system_prompt: file://snapshots/designer.system.txt
+
+tests:
+  - description: "agents-list page → all five sections present"
+    vars:
+      ticketId: "f1f1f1f1-f1f1-f1f1-f1f1-f1f1f1f1f1f1"
+      title: "Design /agents list page"
+      description: "An operator's first view of their agents. Shows status, last run, and per-agent spend. Empty state must be inviting."
+      acceptance_criteria: |
+        - List view with row per agent
+        - Empty state with CTA to create first agent
+        - Per-row "Edit" action
+    assert:
+      - type: regex
+        value: "(?i)Component sketch"
+      - type: regex
+        value: "(?i)State matrix"
+      - type: regex
+        value: "(?i)Accessibility"
+      - type: regex
+        value: "(?i)Interaction notes"
+      - type: regex
+        value: "(?i)Copy deck"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The spec must include all five required sections (Component sketch,
+          State matrix, Accessibility, Interaction notes, Copy deck) and
+          enumerate at least loading / empty / error states. Pass iff every
+          required section has at least one substantive line.
+
+  - description: "form-heavy ticket → enumerates error/loading/disabled states"
+    vars:
+      ticketId: "f2f2f2f2-f2f2-f2f2-f2f2-f2f2f2f2f2f2"
+      title: "Design new-agent form"
+      description: "A form to create a new agent from a job description paste."
+      acceptance_criteria: |
+        - JD textarea (multi-line)
+        - Submit triggers Sonnet synthesis
+        - User can edit synthesized fields before save
+    assert:
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The spec must enumerate at minimum: loading state during synthesis,
+          error state for synthesis failure, disabled state during submission,
+          and an empty/initial state. Must reference shadcn/ui primitives
+          (Form, Input, Button, etc.) by name.
