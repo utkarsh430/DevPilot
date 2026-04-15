@@ -1,0 +1,71 @@
+# Phase 1 / M12 — Promptfoo eval set for the DevOps role.
+
+description: "DevOps role — concrete plan with named files, thresholds, rollback"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    config:
+      temperature: 0
+      max_tokens: 1800
+
+prompts:
+  - id: devops-system
+    raw: |
+      System:
+      {{ system_prompt }}
+
+      User:
+      ticketId: {{ ticketId }}
+
+      Ticket:
+      Title: {{ title }}
+      Description: {{ description }}
+      Acceptance Criteria:
+      {{ acceptance_criteria }}
+
+defaultTest:
+  vars:
+    system_prompt: file://snapshots/devops.system.txt
+
+tests:
+  - description: "deployment plan asks → produces rollback step"
+    vars:
+      ticketId: "b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1"
+      title: "Deploy v0.5 to Vercel preview, then promote"
+      description: "Ship v0.5 with the new agents-as-API surface. Need a phased rollout with abort criteria."
+      acceptance_criteria: |
+        - Phased rollout (10% → 100%)
+        - Named guardrail metrics with abort thresholds
+        - Explicit rollback command
+    assert:
+      - type: regex
+        value: "(?i)rollback"
+      - type: regex
+        value: "(?i)(threshold|p95|error rate|abort)"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The plan must name specific files, env vars, or commands (not
+          generic best-practices). It must include a concrete rollback step
+          and at least one quantified guardrail metric. Vague output
+          ("set up monitoring") is a failure.
+
+  - description: "monitoring spec → cites Sentry/Langfuse/PostHog from stack"
+    vars:
+      ticketId: "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2"
+      title: "Add monitoring for run latency regressions"
+      description: "We need alerts when p95 run latency crosses 90s."
+      acceptance_criteria: |
+        - Dashboard panel name
+        - Sentry alert rule with threshold
+        - On-call routing
+    assert:
+      - type: regex
+        value: "(?i)(sentry|langfuse|posthog)"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The monitoring spec must reference the project's actual stack
+          (Sentry / Langfuse / PostHog / Vercel / Inngest) — must not
+          invent infra. Pass iff the spec names at least one tool from the
+          documented stack and specifies a concrete threshold.
