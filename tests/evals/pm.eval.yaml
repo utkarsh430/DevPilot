@@ -1,0 +1,83 @@
+# Phase 1 / M12 — Promptfoo eval set for the PM role.
+#
+# PM is the simplest role: takes a rough ticket, emits a refined ticket in a
+# fixed-format block (Title / Description / Acceptance Criteria). The
+# structural assertions below check that the output shape is the contract
+# downstream roles (Engineer, QA) consume.
+
+description: "PM role — refine rough tickets to a fixed-shape output"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    label: anthropic-sonnet
+    config:
+      temperature: 0
+      max_tokens: 1000
+
+prompts:
+  - id: pm-system
+    raw: |
+      System:
+      {{ system_prompt }}
+
+      User:
+      Rough ticket:
+      {{ rough_ticket }}
+
+defaultTest:
+  vars:
+    system_prompt: file://snapshots/pm.system.txt
+
+tests:
+  - description: "rough auth ticket → refined PM output shape"
+    vars:
+      rough_ticket: "users keep forgetting passwords, need reset thing"
+    assert:
+      - type: contains
+        value: "Title:"
+      - type: contains
+        value: "Description:"
+      - type: contains
+        value: "Acceptance Criteria:"
+      - type: regex
+        value: '(?ms)Acceptance Criteria:\s*(\n-\s.+){3,}'
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The PM output must follow the exact shape (Title / Description /
+          Acceptance Criteria with 3+ bulleted criteria). The acceptance
+          criteria must be specific and actionable (not vague), and must
+          reference user-visible behavior not implementation details.
+
+  - description: "rough analytics ticket → refined PM output shape"
+    vars:
+      rough_ticket: "operators want a dashboard for daily active runs"
+    assert:
+      - type: contains
+        value: "Title:"
+      - type: contains
+        value: "Acceptance Criteria:"
+      - type: regex
+        value: '(?ms)Acceptance Criteria:\s*(\n-\s.+){3,}'
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The PM output must produce 3+ concrete acceptance criteria for a
+          dashboard ticket. Criteria should be testable (e.g. "shows N rows",
+          "refresh interval X seconds") rather than aspirational ("looks
+          good").
+
+  - description: "rough infra ticket → refined PM output shape, no code"
+    vars:
+      rough_ticket: "we need to track which agents are using the most tokens"
+    assert:
+      - type: contains
+        value: "Title:"
+      - type: not-icontains
+        value: "```"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The PM output must NOT include code blocks or implementation details
+          (the PM prompt explicitly forbids them — that is the Engineer's
+          job). It should describe what an operator sees, not how to build it.
