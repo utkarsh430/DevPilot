@@ -1,0 +1,24 @@
+{
+  "$schema": "./baseline.schema.json",
+  "_comment": "Baseline snapshot of per-role pass-rates. Recorded by `node tests/evals/run-acceptance.mjs --record-baseline` (needs ANTHROPIC_API_KEY and a clean tree). ci-compare.mjs fails a PR if any role drops more than regression_threshold_pp below its pass_rate here. IMPORTANT: a role whose pass_rate is null is BOOTSTRAPPING and does NOT block — while every entry is null, the only hard gate on a prompt change is the snapshot --check. Note the gate also needs the ANTHROPIC_API_KEY secret present in CI; without it ci-compare.mjs skips every role and exits 0. See .github/workflows/evals.yml and README.md.",
+  "schema_version": 1,
+  "recorded_at": null,
+  "recorded_commit": null,
+  "model": "claude-sonnet-4-5-20250929",
+  "regression_threshold_pp": 5,
+  "roles": {
+    "pm": { "pass_rate": null, "total": 3 },
+    "engineer": { "pass_rate": null, "total": 5 },
+    "backend_engineer": { "pass_rate": null, "total": 4 },
+    "project_scaffolder": { "pass_rate": null, "total": 4 },
+    "qa": { "pass_rate": null, "total": 4 },
+    "triage": { "pass_rate": null, "total": 3 },
+    "tech_lead": { "pass_rate": null, "total": 2 },
+    "security": { "pass_rate": null, "total": 3 },
+    "techwriter": { "pass_rate": null, "total": 2 },
+    "designer": { "pass_rate": null, "total": 2 },
+    "dataeng": { "pass_rate": null, "total": 2 },
+    "devops": { "pass_rate": null, "total": 2 },
+    "supervisor": { "pass_rate": null, "total": 2 }
+  }
+}
