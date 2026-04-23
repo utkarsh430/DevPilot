@@ -1,0 +1,39 @@
+# Prettier format check — runs on every PR and push to main so formatting
+# drift (unformatted files slipping past review) cannot silently reaccumulate.
+
+name: format
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: format-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # No `version:` here - pnpm/action-setup derives it from the
+      # `packageManager` field in package.json (pnpm@10.29.3). Pinning it in
+      # both places makes action-setup@v4 abort with ERR_PNPM_BAD_PM_VERSION.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      - name: format:check
+        run: pnpm format:check
