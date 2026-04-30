@@ -110,3 +110,27 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 - **Economics** — per-run budget ceilings checked before _and after_ every step; a tenant-wide cost-velocity breaker that no override can bypass; recursion-depth, fan-out and total-agent caps on every spawn; a QA retry ceiling and a gate-retry ceiling so two disagreeing roles cannot loop forever.
 - **Operator-only controls** for every escape hatch (budget override, agent ticket filing, supervisor remediation), so an agent can never arm its own exemption.
 
+### Self-healing, with a conscience
+
+- **Ticket reconciler + stuck-ticket sweeper** — a run that completes without advancing its ticket is reconciled against the role's contract; verdict-less reviews are parked for a human, never silently re-run.
+- **Orphan reaper** — a ticket in a working state with no live run and no queued dispatch is handed back to you with a comment that names the idle window, the last run's recorded failure reason and how to resume.
+- **Dispatch rescue** — WIP slots are released from the _fact_ of capacity, not from an event that may have been lost; the "at capacity with nothing running" contradiction surfaces in the health indicator.
+- **Supervisor loop** — runs in the always-resident runner, outside the scheduler it supervises; observes while the engine's own healers are alive and remediates only when they are provably wedged, reusing their exact primitives.
+- **Indictment ledger** — every automatic fix is recorded with its cause, and repeats are escalated as a suspected defect, so a self-healing system cannot quietly hide a leak forever.
+- **Supervisor console** — ask the board "why is DevPilot-86 blocked?" in plain English and get a grounded answer with the one action that would change it; the model can never name a target the operator did not.
+
+### From ticket to shipped code
+
+- Per-ticket branches in isolated workspaces; **review-before-push** with split diffs, conflict handling and Push & PR.
+- **Auto-land**: approved work is rebased and squash-merged onto the project's integration branch by a serialised pipeline; readiness of dependents gates on the code being _landed_, not merely approved.
+- Conflicts spawn a **merger agent** in the source workspace; every landing outcome — landed, nothing to land, not landed and _why_ — is recorded and rendered on the card.
+- Never-queued, never-triggered and never-pushed landings are each recovered by a dedicated sweep; nothing ever force-pushes, and no workspace holding the only copy of a commit is ever deleted.
+- **Vercel integration**: OAuth connect, repo link with explicit production-branch and auto-deploy posture, provenance-aware environment-variable push, preview/production deploys, rollback and undo — all human-only.
+
+### Observability you can hand to an auditor
+
+- **Run Inspector** — a wall-clock waterfall of think / tool / result steps with per-step cost, a cumulative cost curve against the budget, cohort lanes, Langfuse deep links, live tmux attach and take-the-wheel takeover.
+- **Audit-grade PDF export** per ticket and per project: narration, cost, verification evidence, landing state, attachments — rendered server-side, tenant-scoped at every read, injection-safe by construction.
+- **Agent scoreboard** with Bayesian-smoothed, per-category rankings; synthetic platform runs are excluded and unattributable work is reported, never ranked.
+- Browser screenshots agents take are captured per step and attached to the trace as evidence, with retention stated rather than silent.
+
