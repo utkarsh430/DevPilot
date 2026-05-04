@@ -1,0 +1,14 @@
+-- Dev-server panel staleness fix.
+--
+-- The Run-on-localhost panel subscribes to `dev_server_sessions` via Supabase
+-- Realtime with a filter on a NON-primary-key column (tenant_id=eq.<id>).
+-- Realtime can only evaluate such a filter for UPDATE/DELETE events when the
+-- table's replica identity carries that column. With the default replica
+-- identity (primary key only), tenant_id is absent from the UPDATE WAL record,
+-- so every status / last_log_tail / missing_env_keys UPDATE was silently
+-- dropped — the panel only refreshed its state on a full page reload.
+--
+-- FULL ships the whole row on UPDATE/DELETE, matching `pending_pushes` (the
+-- canonical working Realtime table). Fixes live terminal tail, stop→idle, and
+-- needs_env→running transitions without a manual refresh.
+alter table public.dev_server_sessions replica identity full;
