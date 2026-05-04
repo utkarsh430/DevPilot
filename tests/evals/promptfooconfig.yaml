@@ -1,0 +1,38 @@
+# Phase 1 / M12 — root Promptfoo config.
+#
+# DevPilot roles are evaluated individually (one yaml per role) so a single role
+# can be rerun in isolation under CI without the cost of the entire suite.
+# This root file is the convenience entry point — `promptfoo eval` from
+# tests/evals/ uses one of the per-role yamls passed via -c.
+#
+# CI default: tests/evals/run-acceptance.mjs walks each per-role yaml and
+# rolls the per-role pass rates into `tests/evals/results.json`, then
+# diffs against tests/evals/baseline.json. A drop > 5% fails the PR.
+#
+# Reproducibility: every per-role yaml pins `claude-sonnet-4-5-20250929`
+# with temperature: 0, and the system prompt body is loaded from
+# tests/evals/snapshots/<role>.system.txt — both the yaml and the snapshot
+# must be edited together, so a silent prompt drift is impossible.
+
+description: "DevPilot evals — pinned-prompt regression harness (one yaml per role)"
+
+# Listed for documentation only. The acceptance runner walks the
+# `tests/evals/*.eval.yaml` glob directly so adding a new role is a single
+# file add.
+roles:
+  - pm
+  - engineer
+  - qa
+  - triage
+  - tech_lead
+  - security
+  - techwriter
+  - designer
+  - dataeng
+  - devops
+  - supervisor
+  # Workstream B1 — the three underperforming roles brought under measurement.
+  # `engineer` was already listed; `backend_engineer` and `project_scaffolder`
+  # had neither a snapshot nor an eval before B1.
+  - backend_engineer
+  - project_scaffolder

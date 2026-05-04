@@ -1,0 +1,82 @@
+# Phase 1 / M12 — Promptfoo eval regression CI.
+#
+# What this workflow proves
+# ──────────────────────────
+# On every PR that touches a role prompt, a fixture, or the eval harness
+# itself, run Promptfoo against the per-role gold sets and compare the
+# pass-rate against the committed baseline. Fail the PR if any role's
+# pass-rate drops by more than `regression_threshold_pp` (5 pp) versus
+# `tests/evals/baseline.json`.
+#
+# Bootstrapping: the committed baseline ships with `pass_rate: null` for
+# every role on the first M12 commit. While any role's baseline is `null`,
+# the comparison step records the result but does NOT block the PR — this
+# lets us land the harness, run it green on main, then promote the first
+# real baseline in a follow-up commit. From then on, every PR is gated.
+#
+# Cost guard: this workflow only runs when an eval-relevant path changes
+# (see `paths` below). A docs-only PR does NOT spin up Anthropic calls.
+
+name: evals
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/lib/roles/**"
+      - "tests/evals/**"
+      - ".github/workflows/evals.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/lib/roles/**"
+      - "tests/evals/**"
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # No `version:` here - pnpm/action-setup derives it from the
+      # `packageManager` field in package.json (pnpm@10.29.3). Pinning it in
+      # both places makes action-setup@v4 abort with ERR_PNPM_BAD_PM_VERSION.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      - name: snapshot-check (prompts in sync)
+        # A PR that edits a role's systemPrompt without re-running
+        # snapshot-prompts.mjs fails here — the snapshot file is the
+        # load-bearing artifact for Promptfoo.
+        run: node --import tsx tests/evals/snapshot-prompts.mjs --check
+
+      - name: typecheck
+        run: pnpm --filter @devpilot/web typecheck
+
+      - name: run promptfoo eval for each role
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PROMPTFOO_DISABLE_TELEMETRY: "1"
+        run: node tests/evals/ci-compare.mjs
+
+      - name: upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: tests/evals/.tmp/
+          retention-days: 14

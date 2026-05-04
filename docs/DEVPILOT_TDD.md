@@ -330,3 +330,45 @@ Stripe metered billing keyed to usage events (tokens, completed tickets, agent-m
 - **OpenAI-compatible:** a `/v1/chat/completions` shim maps to an agent so existing OpenAI clients work with a one-line base-URL change.
 - **Embeddable widget:** _(as-built: an **iframe** page at `/widget/[agentId]` with a scoped token + SSE, not a standalone JS `<script>` bundle/React component. Domain-allowlist hardening is deferred — `frame-ancestors _`.)\* opens a streaming session against the agent endpoint.
 
+### 3.12 Execution Runners — API vs BYO Claude Code (F-RUN-\*)
+
+The harness (§3.2) defines _what_ a step is; a **Runner** defines _how_ that step reaches a model. The durable engine dispatches a job to whichever runner the agent/tenant is configured for. This keeps the LLM as the only hard dependency while supporting both per-token API use and subscription-backed local execution.
+
+```ts
+interface Runner {
+  id: string;
+  capabilities: string[]; // e.g. ["file_edit","bash","git"]
+  execute(step: AgentStep): Promise<StepResult>;
+}
+```
+
+**(a) API Runner (F-RUN-02).** Calls the model via the Vercel AI SDK adapter (§3.1). Stateless, horizontally scalable, multi-tenant safe. Offered as a **selectable option from Day 1**, and is the **required** runner for the multi-tenant platform play.
+
+**(b) Local Claude Code Runner (BYO subscription — F-RUN-03/06) — the default execution path from Day 1.** A worker process that executes steps via the **Claude Agent SDK** / `claude -p` (headless mode), authenticated with the user's **own Pro/Max subscription** rather than an API key. It gives agents the full Claude Code toolset — file editing, bash, git — which is exactly what the software-studio roles need.
+
+```bash
+# Headless invocation the runner shells out to (or uses the Agent SDK TS/Python package)
+claude -p "$STEP_PROMPT" \
+  --output-format stream-json \
+  --allowedTools "Read,Edit,Bash,Grep" \
+  --permission-mode acceptEdits \
+  --mcp-config mcp-config.example.json
+# Auth via the subscription, not an API key:
+export CLAUDE_CODE_OAUTH_TOKEN=...        # requires Pro/Max; created once via `claude setup-token`
+```
+
+**Billing nuance (verify against current docs before relying on it):** as of the June 2026 changes, Agent SDK / `claude -p` usage on subscription plans draws from a **separate monthly Agent SDK credit** (on Max 20x, $200/mo), distinct from interactive limits. Past that credit, usage falls back to standard API rates **only if extra-usage is enabled**, otherwise the SDK stops until the credit refreshes. DevPilot should surface remaining credit and never silently spill into paid API.
+
+**Concurrency boundary (the important constraint).** The subscription runner suits ~1–3 steady concurrent agents; 5+ concurrent/overnight agents hit subscription rate limits. Therefore:
+
+- `runner_policy` is set per tenant/agent.
+- The supervisor (§3.5) must **not** fan out subscription-backed children beyond a configured concurrency cap; spawned children inherit the parent's runner policy, and over-cap spawns either queue or fall back to the API Runner (F-RUN-07) — never blast the subscription into failures.
+
+**Registration & dispatch (F-RUN-04/05).** A local runner is a worker that authenticates to DevPilot, registers its `capabilities`, and pulls jobs tagged `runner: local-cc` from the engine via Redis/queue. The engine treats it like any other worker, so durability, tracing, checkpointing, and the board all work identically regardless of runner. Registration is **idempotent on `(tenant_id, name)`** — the register route upserts, backed by a unique constraint — so a boot-time retry re-resolves to the same runner row instead of registering a duplicate that would silently breach the concurrency cap. That retry matters on a cold `pnpm dev`, where the runner routinely wins the race and calls `registerRunner()` before Next.js binds `:3000`: the boot handshake retries transient connect failures (ECONNREFUSED) with bounded backoff, but rethrows any real HTTP response (401/403, malformed body) immediately so genuine misconfiguration still fails loudly.
+
+```
+DevPilot durable engine ──(job: runner=local-cc)──▶ Redis queue ──▶ Local Claude Code Runner
+        ▲                                                              │ (always-on host,
+        └──────────────── step results / trace spans ─────────────────┘  systemd/pm2)
+```
+
