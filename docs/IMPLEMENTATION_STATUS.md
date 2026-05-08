@@ -52,3 +52,7 @@ The schema has grown from the ~12 core tables the TDD models to **~35 tables** a
 
 ---
 
+## Not yet implemented (THE GAP LIST)
+
+Each item lists its plan source and a one-line evidence note. This is the section the captain asked for.
+
