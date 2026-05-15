@@ -1,0 +1,100 @@
+# The correctness gate: `pnpm test` and `pnpm typecheck` on every PR.
+#
+# Why this exists
+# ───────────────
+# Until this landed, CI ran `format:check`, the legacy-brand scan, and - on the
+# narrow set of PRs touching `apps/web/lib/roles/**` or `tests/evals/**` - a
+# typecheck inside `evals.yml`. Nothing ran the test suite, and the great
+# majority of PRs matched no eval path and so were typechecked by nobody. Every
+# merge therefore rested on the author having run both locally and reported the
+# result honestly. That is trust, not verification: a PR whose author skipped or
+# misread a local run could merge red with a green banner.
+#
+# Deliberately NO `paths:` filter
+# ───────────────────────────────
+# `evals.yml` is path-filtered for a good reason - it spends Anthropic tokens,
+# so a docs-only PR should not trigger it. But that filter is exactly why its
+# typecheck step was not a gate: it is scoped to prompt work, and a type error
+# in `lib/engine` matched none of its paths. These two jobs are cheap and must
+# answer "does this repo still build and pass" for EVERY PR, so they are
+# unfiltered on purpose. Do not add a `paths:` filter here to save a minute.
+#
+# Two jobs, not two steps in one
+# ──────────────────────────────
+# Split so each reports its own status check (a typecheck failure and a test
+# failure are different problems and branch protection can require them
+# separately), and so they run concurrently - wall clock is the slower of the
+# two rather than their sum. The cost is a second `pnpm install`, which the
+# setup-node pnpm cache makes cheap.
+#
+# Measured cold on this repo (2026-07-19, no turbo cache, no .tsbuildinfo):
+# typecheck ~7s, test ~24s. The work these jobs do is not the bottleneck;
+# install and runner startup dominate. There is no speed argument for making
+# either of these advisory rather than blocking.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # No `version:` here - pnpm/action-setup derives it from the
+      # `packageManager` field in package.json (pnpm@10.29.3). Pinning it in
+      # both places makes action-setup@v4 abort with ERR_PNPM_BAD_PM_VERSION.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      # Covers BOTH workspaces (`@devpilot/web` and `@devpilot/runner`) via turbo.
+      # `apps/web/tsconfig.json` includes `.next/types/**/*.ts`, which does not
+      # exist on a cold checkout; the glob simply matches nothing. `evals.yml`
+      # has run typecheck this way on CI since M12, so the cold path is proven.
+      - name: typecheck
+        run: pnpm typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      # turbo picks up any workspace `test` script automatically, so a suite
+      # added in a new package is gated the day it lands with no edit here.
+      # Neither suite needs a `next build` - web is Vitest over pure modules,
+      # runner is plain node - so there is no build step to add.
+      - name: test
+        run: pnpm test
