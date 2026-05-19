@@ -372,3 +372,109 @@ DevPilot durable engine ──(job: runner=local-cc)──▶ Redis queue ──
         └──────────────── step results / trace spans ─────────────────┘  systemd/pm2)
 ```
 
+### 3.13 Persistence of Long-Running Work (the "shut the lid" question)
+
+- **Default = server-side durability.** Runs are durable steps on the engine (§3.3); they continue regardless of the user's laptop being open, asleep, or off. The laptop is a client/viewport, never the host of the work.
+- **For the local runner**, the work executes on the runner's host, so that host must stay up. Run the runner under a **process supervisor** which auto-restarts on crash and resumes on reboot. _(As-built: the shipped supervisors are **`systemd` (Linux)** and **`launchd` (macOS)** under `infra/`; `pm2` was named here but is not shipped.)_
+- **`tmux`/`screen` are not the durability mechanism.** They keep a session alive across terminal/SSH disconnects, but a sleeping or powered-off host kills them along with everything else. Acceptable for a quick local experiment; for unattended overnight work use an **always-on host** (cheap VPS or a home server) + supervisor. Closing a laptop lid sleeps the machine unless explicitly configured otherwise, which pauses/kills the runner.
+
+> Design rule: long-running autonomy is a property of the **server-side engine**, not of how the user's terminal is kept open. The local runner is for _which model credentials execute the step_; it is not what makes work survive — the engine is.
+
+---
+
+## 4. Core Data Model (Postgres)
+
+```sql
+-- Tenancy & identity handled by Supabase Auth + tenant_id columns (+ RLS). Clerk optional.
+
+create table agents (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null,
+  name text not null,
+  role text,                         -- pm | engineer | qa | security | ...
+  version int not null default 1,
+  config jsonb not null,             -- prompt, model, tools[], skills[], kb_ids[], guardrails
+  created_at timestamptz default now()
+);
+
+create table tickets (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null,
+  title text not null,
+  description text,
+  acceptance_criteria text,
+  status text not null default 'backlog',  -- state machine §3.4
+  priority int default 3,
+  assignee_agent_id uuid references agents(id),
+  parent_ticket_id uuid references tickets(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table ticket_dependencies (
+  ticket_id uuid references tickets(id),
+  blocks_ticket_id uuid references tickets(id),
+  primary key (ticket_id, blocks_ticket_id)
+);
+
+create table comments (              -- shared agent + human thread (F-BRD-03)
+  id uuid primary key default gen_random_uuid(),
+  ticket_id uuid references tickets(id),
+  author_type text not null,         -- 'agent' | 'human'
+  author_id text not null,
+  body text not null,
+  created_at timestamptz default now()
+);
+
+create table runs (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null,
+  agent_id uuid references agents(id),
+  ticket_id uuid references tickets(id),
+  parent_run_id uuid references runs(id),   -- supervisor tree (F-SUP-03)
+  depth int not null default 0,
+  status text not null default 'running',   -- running|awaiting_human|done|failed
+  budget_cents int not null,                -- ceiling (F cost control)
+  spent_cents int not null default 0,
+  created_at timestamptz default now()
+);
+
+create table run_steps (             -- the durable checkpoint log + trace source
+  id bigserial primary key,
+  run_id uuid references runs(id),
+  idx int not null,
+  kind text not null,                -- think | tool_call | tool_result | human_wait
+  payload jsonb not null,            -- messages, tool io, tokens, cost, latency
+  created_at timestamptz default now()
+);
+
+create table skills (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid,                    -- null = public/marketplace
+  name text not null,
+  version text not null,
+  manifest jsonb not null,           -- skill.yaml parsed
+  body text not null
+);
+
+create table data_sources (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null,
+  kind text not null,                -- kb | vector | sql
+  config jsonb not null,             -- connection (secret refs, not raw secrets)
+  read_only boolean default true
+);
+
+create table kb_chunks (             -- pgvector store
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null,
+  kb_id uuid not null,
+  content text,
+  embedding vector(1536),
+  metadata jsonb
+);
+create index on kb_chunks using hnsw (embedding vector_cosine_ops);
+```
+
+---
+
