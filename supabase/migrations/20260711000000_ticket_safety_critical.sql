@@ -1,0 +1,45 @@
+-- =============================================================================
+-- Migration : 20260711000000_ticket_safety_critical.sql
+--
+-- SME / human-approval gate — the "safety-critical" ticket flag.
+--
+-- Some devpilot tenants ship safety-relevant products (e.g. infant-feeding
+-- guidance: allowed food textures, portion sizes, safe allergens per age band).
+-- Today an all-AI flow can move such a ticket to `done` with NO qualified human
+-- ever reviewing the content. This column is the general, reusable trigger for
+-- the safety gate that closes that hole: a ticket carrying `safety_critical =
+-- true` may transition to `done` ONLY when a HUMAN drives the move. Any
+-- agent/system attempt to complete it is BLOCKED at the `transitionTicket` seam
+-- (`lib/board/transitions.ts`, the same choke point the L1 QA gate uses, keyed
+-- on the required `actor` discriminator) and the ticket is parked to `blocked`
+-- pending human approval.
+--
+-- Why a dedicated boolean column rather than a reserved label:
+--   • The gate reads it on the ticket row `transitionTicket` ALREADY selects, so
+--     enforcement adds zero extra round-trips. A label lives in a join table
+--     (`ticket_labels`) and would put a lookup on every completing transition.
+--   • A magic label name is brittle — a rename/typo/delete would silently
+--     disarm a SAFETY gate. A typed column can't be misspelled away.
+--   • It is unambiguous and general: any ticket in any project can carry it,
+--     independent of the tenant's freeform label taxonomy.
+--
+-- Read by:  the safety gate inside `transitionTicket` (pure `decideSafetyGate`,
+--           `lib/board/safety-gate.ts`) — no env flag: the gate is ALWAYS active
+--           when the flag is set, so a safety property is not env-disable-able.
+-- Written by: `setTicketSafetyCriticalAction` (operator toggle in the board
+--           drawer) and the create-ticket path.
+--
+-- `not null default false` so every existing and future ticket is
+-- unambiguously non-safety-critical until an operator opts a ticket in; the
+-- gate then keys off a definite boolean, never a null.
+--
+-- Realtime: the board already streams the `tickets` row, and Postgres sends the
+-- full new row on UPDATE regardless of replica identity, so the new column
+-- reaches the board client with no publication change.
+-- =============================================================================
+
+alter table public.tickets
+  add column if not exists safety_critical boolean not null default false;
+
+-- No index: the flag is read only as part of the single-row ticket fetch the
+-- transition seam already performs (WHERE id = …), never queried in isolation.
