@@ -478,3 +478,68 @@ create index on kb_chunks using hnsw (embedding vector_cosine_ops);
 
 ---
 
+## 5. Key Flows
+
+### 5.1 Ticket lifecycle through roles (the "studio" loop)
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant D as Dispatcher
+    participant PM
+    participant Eng as Engineer
+    participant QA
+    participant Sec as Security
+    U->>D: File ticket "add password reset"
+    D->>PM: assign (refine)
+    PM->>PM: split into sub-tickets + acceptance criteria
+    PM->>Eng: assign implementation
+    Eng->>Eng: code, open PR (tool)
+    Eng->>QA: move to In Review
+    QA-->>Eng: reject — token never expires (back to In Progress)
+    Eng->>QA: fix + re-review
+    QA->>Sec: pass → security gate
+    Sec->>Eng: reject — add rate limit (back)
+    Eng->>Sec: fix
+    Sec->>U: all gates pass → Done
+```
+
+### 5.2 Durable offline run with human pause
+
+1. Agent hits a decision it can't make → emits `await_human` → ticket → `Input Required`, run status `awaiting_human`. Process exits; **zero compute** while waiting.
+2. User (hours later) comments on the ticket → emits `human-reply` event.
+3. Engine's `waitForEvent` resolves → run resumes from the exact checkpoint.
+
+### 5.3 Spawn under load
+
+1. Supervisor monitor sees queue depth > threshold.
+2. `assertCanSpawn` passes (depth/total/fan-out/budget OK).
+3. `spawnChild` emits `agent/run.requested` with inherited sub-budget and `parent_run_id`.
+4. On idle, reaper terminates the child; cascade-kill removes the subtree if the supervisor ends.
+
+---
+
+## 6. Security Model (summary)
+
+- Untrusted-by-default: all tool/data/web output is data, never instructions.
+- RLS for tenant + per-agent data scoping.
+- Secrets encrypted, injected at execution time only.
+- E2B microVM sandbox for code/tools; no ambient secrets/network.
+- Approval gates for `dangerous` tools (financial, deletion, permissions, sending messages, publishing).
+- Text-to-SQL: read-only role, allow-list, mandatory LIMIT, statement timeout.
+- Hard caps: per-run budget, recursion depth, total agents, fan-out, spawn rate; cost-explosion circuit breaker.
+- Immutable audit log = the `run_steps` + `comments` history.
+
+---
+
+## 7. Scaling Considerations
+
+- **Stateless edge, durable core:** Vercel functions stay stateless; all state in Postgres/Redis, so horizontal scale is free.
+- **Concurrency keys** per tenant in the engine prevent noisy neighbors.
+- **Back-pressure** via WIP limits and queue concurrency instead of unbounded spawning.
+- **Trace volume:** sample full traces at high volume (e.g., 10–20%), log basic metrics for all.
+- **pgvector → dedicated vector store:** start on pgvector; migrate hot KBs to Pinecone/Qdrant only if recall/latency demands it.
+- **Engine migration path:** Inngest (managed) → Trigger.dev self-hosted if cost/control at scale requires it; the harness interface is unchanged.
+
+---
+
