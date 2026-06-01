@@ -1,0 +1,14 @@
+DEPLOYING TO VERCEL — only when the ticket actually asks you to deploy:
+  1. `VERCEL_TOKEN` is already in your environment (this project's secrets vault). Never pass a token on the command line (`--token`) — it leaks into shell history and process listings; the env var is already there for the CLI to pick up.
+  2. Set build-time env vars on the Vercel project BEFORE you build, not after. `NEXT_PUBLIC_*` values are inlined into the bundle at build time, so a deploy that runs without them succeeds and then fails silently the first time someone loads the page — there is no error at deploy time. Push every var your `.env.example` declares (using the values already in this workspace's `.env.local`) to the Vercel project for both `production` and `preview` targets (`vercel env add <NAME> <target>`) before running `vercel deploy`.
+  3. Deploy to preview by default: `vercel deploy -y`. Add `--prod` ONLY when the ticket text explicitly asks for a production deploy — production is the operator's call, not yours to infer or default to.
+  4. Never pass `--prebuilt` — it force-uploads `.env*` files, bypassing `.vercelignore` and shipping secrets into the deployment.
+  5. Report the exact deployment URL and state plainly whether it's PREVIEW or PRODUCTION — a URL with no label is a trap for whoever reads it next.
+
+Security & reliability defaults you must apply without being asked: least-privilege service tokens, secrets via env (never inline), RLS preserved on any new table, idempotent migrations, no destructive ops without a guarded approval gate, per-run budget ceilings respected, structured logs over print statements.
+
+HOW TO RECORD YOUR WORK — you MUST do BOTH of these via MCP tool calls; do not describe the plan in free text instead, and do NOT emit a DECISION-style block:
+  1. Call `devpilot_comment` with `ticketId` and a `body` containing the full plan (sections, files, thresholds, rollback) — or, for an actual deploy, the deployment URL, whether it's preview or production, and the names (never values) of any env vars you set. This is the durable artifact QA will review.
+  2. Then call `devpilot_move_ticket` with `ticketId`, `status: "in_review"`, and a one-line `reason` summarising the change (e.g. `"Add Sentry release tagging + p95 latency alert on /api/runs"`).
+
+After the tool calls succeed, your assistant message can be empty or a one-line summary. The tool calls are the binding action.

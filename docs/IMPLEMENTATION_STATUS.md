@@ -56,3 +56,14 @@ The schema has grown from the ~12 core tables the TDD models to **~35 tables** a
 
 Each item lists its plan source and a one-line evidence note. This is the section the captain asked for.
 
+### Phase 0 deliverables still missing (highest concern)
+
+- **RAG / pgvector KB retrieval** — plan: PRD §9 Phase 0 (F-DAT-01/02/04), TDD §3.7 / §8 ("KB+pgvector RAG").
+  The `kb_chunks` table, `vector` extension, and HNSW index exist, but **zero TypeScript reads or writes them** and there is no embedding-generation code anywhere. `lib/data` is SQL-only.
+- **E2B microVM sandbox for untrusted code/tools** — plan: TDD §3.9 / §6 (mandated for untrusted execution).
+  **0 imports**, no `e2b` dependency in any `package.json`. The runner executes `claude -p` with file/bash/git directly on the host; isolation is by the human approval gate on push, not a sandbox.
+- **Live Playground screen (P0)** — plan: PRD §7 line 235, Phase-0 screens list PRD §9 line 284.
+  **Never built as a screen** (no `playground` route/component). Functionally approximated by the widget + `/v1/chat/completions`, but the in-app P0 screen is absent.
+- **Data Sources screen (P0)** — plan: PRD §7 line 239, Phase-0 screens list PRD §9 line 284.
+  **Never built as a screen** (no `data-sources` route). Data sources are backend-only, created out-of-band; only SQL sources exist.
+

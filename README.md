@@ -134,3 +134,25 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 - **Agent scoreboard** with Bayesian-smoothed, per-category rankings; synthetic platform runs are excluded and unattributable work is reported, never ranked.
 - Browser screenshots agents take are captured per step and attached to the trace as evidence, with retention stated rather than silent.
 
+### Agents that learn — under human review
+
+- Every failure signal (failed run, failing verification, QA reject, gate refusal, human correction) is harvested into a **mistake record**; an extractor drafts a **candidate lesson**, graded for confidence and deduplicated lexically and semantically.
+- Lessons enter a **review queue** (card and table views, bulk approval with confidence thresholds, standing operator preferences) and only `active` lessons reach agents — as fenced data in the ticket prompt, bounded and ranked by relevance.
+- A rejected lesson stays rejected without blacklisting its subject.
+
+### Planning, stack and marketplace
+
+- **Plan mode**: a multi-agent planning session (parallel specialist panels + consolidator) that commits a dependency-ordered backlog; a **document-seeded project create** (Markdown / PDF / DOCX) that pre-fills the brief.
+- **Stack advisor**: a closed service catalogue (130 entries) and capability taxonomy drive AI-assisted, ranked, ecosystem-coherent stack selection that becomes a hard frame in every plan prompt.
+- **Skills marketplace**: 52 first-party skills, operator-authored skills with AI drafting, a pre-install **scanner** that flags prompt-content hazards without pretending to be a verdict, and provenance tracking so you always know whether your copy, or the catalogue, moved.
+
+### Platform
+
+- Multi-tenant on Postgres **Row-Level Security**, with a schema-level trigger that makes a cross-tenant row unwritable across 48 parent/child relationships.
+- **Encrypted secrets vault** per project (AES-256-GCM in the application layer), a platform-secrets manager with tenant » instance » environment resolution, and explicit per-key opt-in for anything an agent may read.
+- **Headless API** (`POST /v1/agents/{id}/runs`, bearer keys, rate limits, SSE), an **OpenAI-compatible** `/v1/chat/completions` shim, and an embeddable widget.
+- Stripe usage metering with a soft-cutoff dispatch gate; team tiers; notifications; GitHub OAuth per project.
+- **Operator experience**: a pre-auth setup wizard for a fresh instance, a guided Settings → Setup for every credential with live validation, seven-dependency system-health probes with "Fix →" links, an in-app user guide with a downloadable manual, and a one-command local stack.
+
+---
+
