@@ -156,3 +156,38 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 
 ---
 
+## Architecture
+
+```
+┌──────────────────────────────── apps/web (Next.js, App Router) ───────────────────────────────┐
+│  Board · Run Inspector · Agent Builder · Plan mode · Projects · Marketplace · Learnings ·      │
+│  Scoreboard · Guide · Settings/Setup · Supervisor console · /v1 headless API · widget          │
+│                                                                                                │
+│  lib/engine ── durable functions (dispatcher, run loop, reconciler, reapers, landing, supervisor)│
+│  lib/board · lib/roles · lib/integration · lib/learning · lib/export · lib/llm · lib/security   │
+└──────────────┬──────────────────────────┬──────────────────────────────┬───────────────────────┘
+               │ SQL + RLS                │ durable steps / events        │ LPUSH / RPOP (per-request)
+     ┌─────────▼─────────┐      ┌─────────▼─────────┐            ┌───────▼────────┐
+     │ Supabase Postgres │      │ Inngest           │            │ Upstash Redis  │
+     │ auth · storage ·  │      │ self-hosted or    │            │ job queues ·   │
+     │ realtime · RLS    │      │ cloud             │            │ locks · breaker│
+     └───────────────────┘      └───────────────────┘            └───────┬────────┘
+                                                                         │
+                                               ┌─────────────────────────▼─────────────────────────┐
+                                               │ apps/runner (resident worker, one per host)        │
+                                               │ claim → prepare git workspace → claude -p (MCP     │
+                                               │ board tools, Playwright) → verify → report → trace │
+                                               │ + heartbeat, cancel, dev-server, takeover,         │
+                                               │   supervisor loops                                 │
+                                               └────────────────────────────────────────────────────┘
+```
+
+**Design rules the architecture is built on**
+
+1. **Runner-first.** All model access sits behind one `Runner` interface; no vendor SDK is imported outside the adapter layer (enforced by lint).
+2. **Durability over cleverness.** Work resumes from the exact step after a crash or a multi-day pause.
+3. **Hard ceilings everywhere.** No spawn without passing depth, fan-out, total-agent and budget checks; a cost-explosion breaker is mandatory.
+4. **The LLM is the only hard dependency.** Everything else is open-source-first and replaceable.
+5. **The trace is the product.** If it is not a span, it did not happen.
+6. **Untrusted content is data, never instructions.** Dangerous tools pause on a human gate.
+
