@@ -67,3 +67,8 @@ Each item lists its plan source and a one-line evidence note. This is the sectio
 - **Data Sources screen (P0)** — plan: PRD §7 line 239, Phase-0 screens list PRD §9 line 284.
   **Never built as a screen** (no `data-sources` route). Data sources are backend-only, created out-of-band; only SQL sources exist.
 
+### Notifications
+
+- **Email delivery (Resend) + 7 of 10 declared notification kinds** — plan: CLAUDE.md / TDD §2 stack ("Resend … notifications, escalations"), `lib/notifications/kinds.ts`.
+  No Resend/nodemailer/sendgrid import anywhere; notifications are in-app only. Only `plan.started/finished/failed` fire; the `run.*` / `ticket.*` / `push.*` kinds have no emit sites (catalog + settings UI only).
+
