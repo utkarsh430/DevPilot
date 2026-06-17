@@ -1,0 +1,37 @@
+# Guardrail for the ACE -> DevPilot rename. Fails if a new `ace` brand token appears in a
+# namespace the rename already completed (MCP tool names, the `devpilot-board` MCP server
+# key, the Redis keyspace, the Inngest app id, `ACE_*` env reads outside the alias shim).
+#
+# Deliberately retained `ace` tokens (issued-API-key vendor tag, `ace/` branch prefix,
+# `x-ace-*` header fallbacks, browser-storage read-through, applied migrations) are
+# allowlisted by path inside the script, each with the reason it is retained.
+#
+# No pnpm install: the checker is dependency-free node, so this job is seconds.
+
+name: legacy-brand
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: legacy-brand-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  legacy-brand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: check for legacy ACE brand tokens
+        run: node scripts/check-legacy-brand.mjs
