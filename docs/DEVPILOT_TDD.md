@@ -543,3 +543,46 @@ sequenceDiagram
 
 ---
 
+## 8. Phased Build Plan (maps to PRD §9)
+
+**Phase 0 — MVP (the loop):**
+Next.js + Supabase (Postgres + Auth) skeleton → AI SDK adapter → thin harness → Inngest durable runs → tickets + board (dnd-kit) + state machine → PM/Engineer/QA roles → Dispatcher → KB+pgvector RAG → Langfuse tracing → Run Inspector + Work Board + Playground + Data Sources. **Prove: offline PM→Eng→QA loop with a QA rejection, fully resumable.**
+
+> **As-built correction (2026-07-05):** the durable loop, board, roles, dispatcher, tracing, Run Inspector, and Work Board all shipped. But **KB+pgvector RAG is unbuilt — schema-only** (the `kb_chunks` table + HNSW index exist, but no TypeScript reads/writes them and there is no embedding code); and the **Playground** and **Data Sources** screens were never built. See `docs/IMPLEMENTATION_STATUS.md`.
+
+**Phase 1 — The Studio:**
+Remaining roles + custom roles → parallel/branching → supervisor trees + spawning (with caps) → SQL/text-to-SQL → skill + tool marketplaces → Promptfoo evals + replay → agents-as-APIs + OpenAI-compat + widget → Stripe billing → Agent Builder (React Flow).
+
+**Phase 2 — Scale & Ecosystem:**
+Auto-scaling supervisors → teach-a-skill / self-improvement → publishing + white-label → standup/velocity/regression alerts → hybrid search → enterprise track.
+
+---
+
+## 9. Indicative MVP Cost
+
+| Service                        | MVP tier                           | Monthly                    |
+| ------------------------------ | ---------------------------------- | -------------------------- |
+| Vercel                         | Hobby/Free                         | $0                         |
+| Supabase                       | Free                               | $0                         |
+| Upstash Redis                  | Free                               | $0                         |
+| Supabase Auth (Clerk optional) | Free                               | $0                         |
+| Langfuse                       | Self-host (Supabase) or cloud free | $0                         |
+| PostHog / Sentry               | Free                               | $0                         |
+| Inngest                        | Free tier                          | $0                         |
+| Pinecone                       | (optional) Free                    | $0                         |
+| E2B                            | Free tier                          | $0                         |
+| Cloudflare / Resend            | Free                               | $0                         |
+| **LLM (Anthropic API)**        | usage-based                        | **the real variable cost** |
+| Stripe                         | per-txn                            | 2.9% on revenue            |
+
+**Net:** the entire platform runs at ~$0 fixed at MVP scale; LLM token usage is the dominant cost — which is exactly why per-run budgets, cost-aware routing, and spawn caps are P0 requirements, not nice-to-haves.
+
+---
+
+## 10. Open Technical Decisions
+
+1. **Harness:** thin custom (recommended for control) vs Mastra (TS-native, batteries included) vs Claude Agent SDK. Custom for Phase 0; revisit at Phase 1.
+2. **Durable engine:** Inngest (zero-ops, recommended for MVP) vs Trigger.dev (OSS self-host, better at scale/cost). Decide based on Phase 1 volume.
+3. **Vector:** pgvector default; promote to Pinecone/Qdrant only on measured need.
+4. **Realtime:** Supabase Realtime vs Convex for live board/trace updates. Supabase keeps the stack consolidated.
+5. **Runner default:** The **Local Claude Code Runner is the Day-1 default** (BYO Pro/Max subscription, full coding tools), with the **API Runner offered as a selectable option** and required for any multi-tenant serving. Build both in Phase 0 behind the same Runner interface. Confirm the current Agent SDK subscription-credit terms (they changed in June 2026) before documenting cost guarantees to users.
