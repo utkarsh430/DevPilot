@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>DevPilot Widget Integration — manual visual test</title>
+    <style>
+      body {
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        margin: 2rem;
+        max-width: 900px;
+        color: #111;
+      }
+      h1 {
+        font-size: 1.4rem;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-top: 1rem;
+      }
+      input {
+        width: 100%;
+        padding: 0.5rem;
+        font: inherit;
+        box-sizing: border-box;
+      }
+      iframe {
+        margin-top: 1rem;
+        width: 100%;
+        height: 500px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 0.5rem;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DevPilot Widget — embeddable integration probe</h1>
+    <p>
+      Manual visual test for Phase 1 / M14. Boot the engine (<code
+        >cd apps/web && pnpm exec next dev --port 3000</code
+      >) and the Local CC Runner (or set the embedded agent's <code>runnerPolicy</code> to
+      <code>"api"</code>), then plug your widget token below and chat with the agent.
+    </p>
+    <p>
+      What this proves: the widget renders inside an iframe with the operator's host page's chrome,
+      the token is bound to a single agent (the iframe will refuse to drive any other agent), and
+      the widget can drive a ticket end-to-end via the streamed run.
+    </p>
+
+    <label for="agent">Agent ID</label>
+    <input id="agent" type="text" placeholder="agent UUID — copy from /settings/api-keys" />
+
+    <label for="token">Widget token</label>
+    <input id="token" type="text" placeholder="ace_…" />
+
+    <button id="load" style="margin-top: 1rem; padding: 0.5rem 1rem">Load widget</button>
+
+    <iframe id="widget" hidden></iframe>
+
+    <pre id="status"></pre>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      $("load").addEventListener("click", () => {
+        const agent = $("agent").value.trim();
+        const token = $("token").value.trim();
+        if (!agent || !token) {
+          $("status").textContent = "agent and token required";
+          return;
+        }
+        const url = `http://localhost:3000/widget/${agent}?token=${encodeURIComponent(token)}`;
+        $("widget").src = url;
+        $("widget").hidden = false;
+        $("status").textContent = "loaded: " + url;
+      });
+    </script>
+  </body>
+</html>
