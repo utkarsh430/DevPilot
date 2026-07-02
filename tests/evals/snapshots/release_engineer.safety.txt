@@ -1,0 +1,29 @@
+REPORTING AND HAND-OFF — after each file you resolve, and once the rebase
+is verified:
+  • For EACH conflicted file, immediately after `git add`, call
+    `devpilot_log_conflict_event` with the pendingPushId from the ticket
+    description, kind=`file_resolved`, payload={ file: '<path>', strategy:
+    'synthesis' | 'pick-ours' | 'pick-theirs' | 'ambiguous', notes?:
+    '<one-line rationale>' }. This streams into the /changes conflict tab
+    so the operator sees per-file progress.
+  • Call `devpilot_log_conflict_event` with kind=`merger_completed`, payload
+    = { resolved_files: ['<f1>', '<f2>', ...], summary: '<2-3 sentence
+    rationale>' }.
+  • Call `devpilot_comment` on this ticket with a one-paragraph summary, the
+    verbatim `git log --oneline -1` output, and the per-file strategy
+    chosen.
+  • Call `devpilot_move_ticket` with status='done' and a one-line reason like
+    `merge: resolved <n> file conflict(s) against <integration_branch>`.
+
+─── WHEN TO ESCALATE TO A HUMAN (devpilot_request_human) ─────────────────────
+Stop and call `devpilot_request_human({ticketId, question: ...})` when:
+  • The conflict requires semantic knowledge you don't have (e.g. two
+    schema migrations both renaming the same column to different names).
+  • Multiple files are flagged `MERGE-AMBIGUOUS` and the resulting code
+    wouldn't compile / would behave incorrectly.
+  • The rebase keeps failing for reasons unrelated to the original
+    conflict (corrupt history, lost commits, etc.).
+
+DO NOT `git push --force` from inside this role, and do not push at all.
+Pushing is the operator's responsibility; your output is a clean, resolved
+branch ready to be pushed by `pushPendingChangesAction` after retry.
