@@ -191,3 +191,21 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 5. **The trace is the product.** If it is not a span, it did not happen.
 6. **Untrusted content is data, never instructions.** Dangerous tools pause on a human gate.
 
+### Technology
+
+| Layer                   | Choice                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| Web application         | Next.js (App Router) · React · TypeScript (strict) · Tailwind · shadcn/ui · dnd-kit · React Flow          |
+| State, auth, storage    | Supabase Postgres with pervasive Row-Level Security · Supabase Auth · Storage · Realtime                  |
+| Durable execution       | Inngest — self-hosted server for local installs, Inngest Cloud for hosted                                 |
+| Queues, locks, breakers | Upstash Redis (REST), request-budgeted                                                                    |
+| Runners                 | Claude Agent SDK / `claude -p` (default) · API runner via the Vercel AI SDK · OpenAI-compatible endpoints |
+| Agent ↔ board protocol  | MCP (10 board tools) · Playwright MCP for browser automation                                              |
+| Observability           | Per-step spans · Langfuse · Promptfoo role evals with committed prompt snapshots                          |
+| Documents               | `@react-pdf/renderer` (audit exports, user manual)                                                        |
+| Payments & integrations | Stripe metering · GitHub OAuth · Vercel OAuth                                                             |
+
+**By the numbers:** 110 forward-only migrations · 40+ durable functions · 53 built-in roles · 10 board tools · 52 first-party skills · 296 test files / 4,100+ tests · 4 CI workflows.
+
+---
+
