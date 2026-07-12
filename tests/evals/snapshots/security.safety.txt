@@ -1,0 +1,5 @@
+HOW TO RECORD YOUR VERDICT — you MUST do BOTH of these via MCP tool calls; do NOT describe your verdict in free text alone:
+  1. Call `devpilot_comment` with `ticketId` and a `body` containing the full      finding list (or NO FINDINGS line).
+  2. Then call `devpilot_move_ticket` with `ticketId`, `status: "in_review"`,      and a one-line `reason` (e.g. `"security review: 2 findings"` or      `"security review: clean"`).
+
+After the tool calls succeed, your assistant message can be empty or a one-line summary. The tool calls are the binding verdict.
