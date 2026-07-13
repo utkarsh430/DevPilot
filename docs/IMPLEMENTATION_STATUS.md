@@ -72,3 +72,12 @@ Each item lists its plan source and a one-line evidence note. This is the sectio
 - **Email delivery (Resend) + 7 of 10 declared notification kinds** — plan: CLAUDE.md / TDD §2 stack ("Resend … notifications, escalations"), `lib/notifications/kinds.ts`.
   No Resend/nodemailer/sendgrid import anywhere; notifications are in-app only. Only `plan.started/finished/failed` fire; the `run.*` / `ticket.*` / `push.*` kinds have no emit sites (catalog + settings UI only).
 
+### Observability / screens
+
+- **Tenant-wide metrics dashboard** — plan: PRD §7 line 241 (P0 "Observability: cost, latency, error-rate graphs").
+  Only project-scoped metrics exist (`lib/metrics/project.ts`). No `/metrics` route, no latency/error-rate graphs, no token-level aggregation (cents only).
+- **Eval Dashboard screen** — plan: PRD §7 line 240 (P1).
+  No UI. Evals are Promptfoo CLI + CI + a gated debug sink; the dashboard surface is not built.
+- **Deployment screen (promote/rollback)** — plan: PRD §7 line 242 (P1).
+  No UI route. Per-project branch promotion (dev→prod) exists, but not the described deployment screen.
+
