@@ -1,0 +1,64 @@
+diff --git a/lib/pdfkit.browser.js b/lib/pdfkit.browser.js
+index 67511169d9143b1acb2a197f5bec034cd588a072..29af6dcc35fb934b996f38082d633f8dfe60fbd9 100644
+--- a/lib/pdfkit.browser.js
++++ b/lib/pdfkit.browser.js
+@@ -7993,7 +7993,26 @@ class PDFObject {
+     if (n > -1e21 && n < 1e21) {
+       return Math.round(n * 1e6) / 1e6;
+     }
+-    throw new Error(`unsupported number: ${n}`);
++    // ── DevPilot patch ──────────────────────────────────────────────────────
++    // Degrade, never throw. This is the LAST mile before a number is written
++    // into the PDF, so it is the only choke point that covers numbers this
++    // library and its layout engine (Yoga) compute internally — not just the
++    // ones the caller passes in. An audit export must not fail to exist
++    // because one coordinate came out of layout as NaN/Infinity/>=1e21; a
++    // slightly wrong glyph position is a far better outcome than no document.
++    //
++    // 0 rather than a clamp to +/-1e21: an out-of-range coordinate is garbage
++    // either way, and 0 puts the element at its context origin instead of
++    // somewhere absurd but plausible-looking.
++    //
++    // Loud on purpose. A silent clamp would hide the upstream bug that
++    // produced the bad value, which is exactly how this class goes unnoticed.
++    console.error(
++      `[pdfkit] non-finite/out-of-range number coerced to 0: ${n}`,
++      new Error("pdfkit number origin").stack,
++    );
++    return 0;
++    // ── end DevPilot patch ─────────────────────────────────────────────────
+   }
+ }
+ 
+diff --git a/lib/pdfkit.js b/lib/pdfkit.js
+index 3619d74e5c24c7533603a9dc41b45fbd4a7465b0..d4dcfdae3eefeb640b9492f53d131a464b759e6a 100644
+--- a/lib/pdfkit.js
++++ b/lib/pdfkit.js
+@@ -272,7 +272,26 @@ class PDFObject {
+     if (n > -1e21 && n < 1e21) {
+       return Math.round(n * 1e6) / 1e6;
+     }
+-    throw new Error(`unsupported number: ${n}`);
++    // ── DevPilot patch ──────────────────────────────────────────────────────
++    // Degrade, never throw. This is the LAST mile before a number is written
++    // into the PDF, so it is the only choke point that covers numbers this
++    // library and its layout engine (Yoga) compute internally — not just the
++    // ones the caller passes in. An audit export must not fail to exist
++    // because one coordinate came out of layout as NaN/Infinity/>=1e21; a
++    // slightly wrong glyph position is a far better outcome than no document.
++    //
++    // 0 rather than a clamp to +/-1e21: an out-of-range coordinate is garbage
++    // either way, and 0 puts the element at its context origin instead of
++    // somewhere absurd but plausible-looking.
++    //
++    // Loud on purpose. A silent clamp would hide the upstream bug that
++    // produced the bad value, which is exactly how this class goes unnoticed.
++    console.error(
++      `[pdfkit] non-finite/out-of-range number coerced to 0: ${n}`,
++      new Error("pdfkit number origin").stack,
++    );
++    return 0;
++    // ── end DevPilot patch ─────────────────────────────────────────────────
+   }
+ }
+ 
