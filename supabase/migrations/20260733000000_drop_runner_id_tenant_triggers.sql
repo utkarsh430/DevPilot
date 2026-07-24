@@ -1,0 +1,69 @@
+-- =============================================================================
+-- Migration : 20260733000000_drop_runner_id_tenant_triggers.sql
+-- Purpose   : Drop the two `runner_id -> runners` tenant-matches-parent triggers
+--             created by 20260732000000. They encode a relationship that does
+--             not exist: RUNNERS ARE SHARED ACROSS TENANTS.
+--
+-- What went wrong
+-- ───────────────
+-- 20260732000000 generated a tenant-matches-parent trigger for EVERY (tenant_id
+-- + FK-to-a-tenant-scoped-parent) pair in the schema. Deriving the set from the
+-- schema was the right instinct — it is what stopped the enumeration drifting —
+-- but "these two tables are both tenant-scoped and one points at the other" is
+-- NOT the same fact as "their tenants must agree", and the generator treated it
+-- as if it were.
+--
+-- For `runs.runner_id -> runners` and `dev_server_sessions.runner_id -> runners`
+-- the tenants legitimately DISAGREE:
+--
+--   • A runner registers under ONE tenant (`app/api/runners/register/route.ts`
+--     writes `tenant_id: body.tenantId`).
+--   • The claim route (`app/api/runs/[id]/claim/route.ts`) stamps
+--     `runs.runner_id` keyed only on `(id = :runId AND runner_id IS NULL)` —
+--     deliberately WITHOUT a tenant filter. A runner therefore claims and
+--     executes runs belonging to other tenants. That is pooled shared compute,
+--     working as designed.
+--
+-- Production confirms it rather than merely permitting it: one runner had served
+-- runs from all three tenants, and 8 `runs` rows carry
+-- `tenant_id != runners.tenant_id` — all old and terminal, i.e. ordinary history,
+-- not an attack.
+--
+-- Consequence, had this shipped: the FIRST legitimate cross-tenant claim after
+-- deploy would have raised `tenant does not match parent` inside the claim
+-- UPDATE. The claim fails, the run never gets a `runner_id`, and it WEDGES —
+-- while the runner that already rpop'd the job goes on executing it. A guard that
+-- rejects correct behaviour is not a safe default; it is an outage with a
+-- security-shaped comment on it.
+--
+-- Why a new migration instead of editing 20260732000000
+-- ────────────────────────────────────────────────────
+-- That migration is already applied (it is how these triggers reached prod, and
+-- how the audit found them). Applied migrations are historical records here, so
+-- it stays as written — including its now-outdated header, which announces "Two
+-- DELIBERATE exclusions" when there are four. Rewriting an applied file to say
+-- otherwise would be tidier and worse: it invites a checksum mismatch and it
+-- edits history to hide a mistake instead of recording its correction. Read that
+-- header together with this file and `CROSS_TENANT_BY_DESIGN`, which is the
+-- authoritative list.
+--
+-- This also makes the two states converge: prod, where the triggers were dropped
+-- by hand as a live-risk remediation, and a fresh apply, which creates them in
+-- 20260732 and drops them here. `drop trigger if exists` is idempotent, so both
+-- land in the same place and re-running is safe.
+--
+-- The classification now lives in code, as data
+-- ────────────────────────────────────────────
+-- `CROSS_TENANT_BY_DESIGN` (`apps/web/lib/security/tenant-scope-scan.ts`) records
+-- both pairs with their reason, alongside the marketplace provenance pointers it
+-- always had. The trigger-coverage test, the detector's pointer vocabulary and
+-- the prod audit script all read that one set — so an exclusion cannot be honoured
+-- by one layer and forgotten by another, and the coverage test now asserts these
+-- two triggers are ABSENT from the final schema rather than merely un-listed.
+-- =============================================================================
+
+-- runs.runner_id -> runners
+drop trigger if exists trg_runs_runner_id_tenant on public.runs;
+
+-- dev_server_sessions.runner_id -> runners
+drop trigger if exists trg_dev_server_sessions_runner_id_tenant on public.dev_server_sessions;
