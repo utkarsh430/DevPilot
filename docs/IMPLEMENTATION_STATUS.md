@@ -81,3 +81,12 @@ Each item lists its plan source and a one-line evidence note. This is the sectio
 - **Deployment screen (promote/rollback)** — plan: PRD §7 line 242 (P1).
   No UI route. Per-project branch promotion (dev→prod) exists, but not the described deployment screen.
 
+### Phase 2 production milestones
+
+- **M1 — containerized runner** — plan: DEVPILOT_PHASE2_PLAN.md §M1 (`apps/runner/Dockerfile`, `infra/docker/README.md`).
+  No Dockerfile anywhere; `infra/docker/` absent.
+- **M2 — multi-release dispatch with safety budget** — plan: DEVPILOT_PHASE2_PLAN.md §M2 (`claim_next` → `claim_up_to` RPC).
+  The RPC change never happened; only `dispatch_queue_claim_next` exists (grep for `claim_up_to` → 0 hits).
+- **M4 — Vercel + Inngest Cloud production deploy** — plan: DEVPILOT_PHASE2_PLAN.md §M4 (`vercel.json`, `infra/deploy-vercel.md`, `app/api/health/route.ts`).
+  All three absent. (A richer `/api/system-health` + a trivial `/health` liveness exist, but not the M4 `/api/health` artifact.)
+
