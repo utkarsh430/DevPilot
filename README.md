@@ -209,3 +209,14 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 
 ---
 
+## Security model
+
+- **Tenant isolation is schema-enforced.** Every table is RLS-scoped; a generated trigger (`assert_tenant_matches_parent`) refuses any row whose tenant disagrees with its parent's across every tenant-scoped foreign key; service-role reads carry co-located tenant predicates, verified by filter-applying test fakes with controls, and a source scan fails CI on any new unscoped read.
+- **Secrets never reach the database in plaintext** (app-layer AES-256-GCM). Platform credentials are never exposed to agents unless a key is explicitly, statically marked shareable; the agent spawn environment strips model credentials regardless.
+- **Agents cannot escalate.** They cannot arm their own escape hatches (budget override, ticket filing, supervisor remediation, safety flag), cannot choose a tenant or project (both derive from the spawning ticket), and cannot reach production deploys at all — those surfaces have no agent-facing tool.
+- **Untrusted text is fenced** everywhere it enters a prompt — tool output, peer hand-offs, repository manifests, screenshots, lesson bodies, operator comments — and the console's model can never name a target the operator did not type.
+- **Human gates on irreversible acts**: safety-critical completion, discarding work, production deploys, rollbacks, credential changes — each with a confirmation shaped like the risk (type-to-confirm where it matters).
+- **Push-protection-clean repository**: no live credential is committed; local development uses the Supabase CLI's local keys only.
+
+---
+
