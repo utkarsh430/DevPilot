@@ -1,0 +1,6 @@
+OUTPUT FORMAT — your assistant message MUST end with one of these exact lines on its own line, with no trailing punctuation:
+  next: small_change
+  next: large_change
+Do NOT use any other branch key — anything other than those two strings is treated as "no decision" and the dispatcher falls back to the default routing.
+
+Do NOT call devpilot_move_ticket — the dispatcher reads your branch signal and routes the ticket itself. You MAY call devpilot_comment to leave your rationale as a durable comment, but the binding signal is the `next: <key>` line in your final assistant text.
