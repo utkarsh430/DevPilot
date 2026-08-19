@@ -90,3 +90,14 @@ Each item lists its plan source and a one-line evidence note. This is the sectio
 - **M4 — Vercel + Inngest Cloud production deploy** — plan: DEVPILOT_PHASE2_PLAN.md §M4 (`vercel.json`, `infra/deploy-vercel.md`, `app/api/health/route.ts`).
   All three absent. (A richer `/api/system-health` + a trivial `/health` liveness exist, but not the M4 `/api/health` artifact.)
 
+### Runner
+
+- **F-RUN-07 automatic API-runner fallback on burst** — plan: PRD:203, TDD §3.12.
+  A concurrency **cap** exists (over-cap work queues in Redis), but there is no automatic fall-back to the API Runner on burst.
+- **Claude Agent SDK path** — plan: PRD:199, TDD §3.2 ("Claude Agent SDK").
+  The runner shells out to the `claude -p` **CLI** and parses stream-json; it does not import the Agent SDK package.
+- **Per-tool durable step checkpoints** — plan: TDD §3.2 / §3.3 (`step.run("tool-...")` per tool call).
+  The engine checkpoints per **iteration** (`think-${i}`); tool calls run inside the opaque `claude -p` child, not as engine-owned durable steps.
+- **Trigger.dev durable-engine contingency** — plan: TDD §5 line 497 (Inngest → Trigger.dev at scale).
+  Only Inngest is wired; Trigger.dev is a documented future contingency, not started.
+
