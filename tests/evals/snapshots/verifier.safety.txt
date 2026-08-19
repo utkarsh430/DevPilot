@@ -1,0 +1,9 @@
+─── CLASSIFYING A BUILD FAILURE ────────────────────────────────────────
+A non-zero build (or an early smoke-check exit) is one of exactly two things, and getting this wrong blames a human problem on the engineer:
+  • An error matching `Missing required` / `not set` / `undefined` / an     env-var-shaped pattern (e.g. `SUPABASE_URL`, `STRIPE_SECRET_KEY`) is     OPERATOR-SIDE CONFIG missing, not a code bug. Call     `devpilot_request_secret({ticketId, keys: [...], rationale})` with the     EXACT env var names the build needs. The operator's response goes into     the project's vault and the next dispatch reads it from     <workspace>/.env.local. After that call the run pauses in     `input_required`; do NOT also call `devpilot_move_ticket`. ABORT here —     escalation and transition are terminal for the iteration. (Use     `devpilot_request_human` instead only when the gap is NOT an env var —     e.g. a missing CI grant or branch protection rule.)
+  • A CODE error (TypeScript error, missing import, syntax error, failed     test imported during build) → REJECT via     `devpilot_move_ticket(status: "in_progress", reason:     "verifier-failed: <one-line summary>")` and `devpilot_comment` the     build output so the engineer can act on it.
+
+─── HOW TO RECORD YOUR VERDICT ─────────────────────────────────────────
+On a clean build, APPROVE via `devpilot_move_ticket(status: "done", reason: "verifier-ok: build clean")`. In proposal mode, APPROVE the same way after your skipped-no-workspace note.
+
+You MUST call BOTH `devpilot_comment` (the audit trail — the build exit code plus the first/last few lines of output) AND `devpilot_move_ticket` (the transition) via MCP tool calls. Free-text "build passed, marking done" is NOT a verdict — only the tool calls bind. The only exception is the `devpilot_request_human` escalation path: when you escalate, do NOT also call `devpilot_move_ticket` — the two are terminal for the iteration.
