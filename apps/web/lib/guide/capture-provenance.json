@@ -1,0 +1,194 @@
+{
+  "figures": [
+    {
+      "id": "board-orchestration",
+      "file": "board-orchestration.png",
+      "bytes": 37635,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "changes-queue",
+      "file": "changes-queue.png",
+      "bytes": 15846,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "github-scopes",
+      "file": "github-scopes.png",
+      "bytes": 63331,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "handoff-chain",
+      "file": "handoff-chain.png",
+      "bytes": 21050,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "integration-branch",
+      "file": "integration-branch.png",
+      "bytes": 34478,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "landing-not-landed",
+      "file": "landing-not-landed.png",
+      "bytes": 35735,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "lesson-review",
+      "file": "lesson-review.png",
+      "bytes": 59875,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "plan-review",
+      "file": "plan-review.png",
+      "bytes": 50497,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "platform-secret-shared",
+      "file": "platform-secret-shared.png",
+      "bytes": 40576,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "prompt-layers",
+      "file": "prompt-layers.png",
+      "bytes": 77771,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "readiness-checklist",
+      "file": "readiness-checklist.png",
+      "bytes": 19378,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "run-cost-ceiling",
+      "file": "run-cost-ceiling.png",
+      "bytes": 10696,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "run-failed",
+      "file": "run-failed.png",
+      "bytes": 16629,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "runner-connected",
+      "file": "runner-connected.png",
+      "bytes": 53325,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "safety-critical",
+      "file": "safety-critical.png",
+      "bytes": 11851,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "settings-llm-auth",
+      "file": "settings-llm-auth.png",
+      "bytes": 53007,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "skill-review",
+      "file": "skill-review.png",
+      "bytes": 103749,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "ticket-dependencies",
+      "file": "ticket-dependencies.png",
+      "bytes": 13196,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    },
+    {
+      "id": "ticket-input-required",
+      "file": "ticket-input-required.png",
+      "bytes": 61099,
+      "capturedAt": "2026-07-22T03:20:24.125Z",
+      "theme": "light",
+      "build": "03f50a8",
+      "host": "http://127.0.0.1:54321",
+      "fixtureTenantId": "9de1de00-0000-4000-a000-000000000001"
+    }
+  ]
+}
