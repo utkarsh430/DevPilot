@@ -1,0 +1,73 @@
+# Phase 1 / M12 — Promptfoo eval set for the Tech Lead role.
+
+description: "Tech Lead role — four-section architectural review"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    config:
+      temperature: 0
+      max_tokens: 2000
+
+prompts:
+  - id: tech_lead-system
+    raw: |
+      System:
+      {{ system_prompt }}
+
+      User:
+      ticketId: {{ ticketId }}
+
+      Ticket:
+      Title: {{ title }}
+      Description: {{ description }}
+      Acceptance Criteria:
+      {{ acceptance_criteria }}
+
+defaultTest:
+  vars:
+    system_prompt: file://snapshots/tech_lead.system.txt
+
+tests:
+  - description: "RLS-touching ticket → produces all four sections + REQUEST_CHANGES or APPROVE"
+    vars:
+      ticketId: "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1"
+      title: "Add cross-tenant API key sharing"
+      description: "Tenants share read-only API keys with partner tenants. Requires RLS changes on api_keys."
+      acceptance_criteria: |
+        - New RLS policy on api_keys.shared_with_tenant_ids
+        - All /api/* routes call check_tenant_access()
+    assert:
+      - type: regex
+        value: "(?i)risk surface"
+      - type: regex
+        value: "(?i)design alternatives"
+      - type: regex
+        value: "(?i)pre-merge gates"
+      - type: regex
+        value: "(?i)(APPROVE|REQUEST_CHANGES|BLOCK)"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The review must include all four sections (Risk surface, Design
+          alternatives, Pre-merge gates, Recommendation) and end with one
+          of the three recommendation values. Pass iff the recommendation is
+          either REQUEST_CHANGES or BLOCK for an RLS-touching change
+          (APPROVE would be acceptable only with explicit conditions).
+
+  - description: "migration ticket → names rollback procedure as a pre-merge gate"
+    vars:
+      ticketId: "c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2"
+      title: "Add archived_at column to tickets"
+      description: "Add nullable column + backfill. Update list query."
+      acceptance_criteria: |
+        - Migration adds column
+        - List query excludes archived
+    assert:
+      - type: regex
+        value: "(?i)(rollback|migration|safety)"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The pre-merge gates section must explicitly call out migration
+          safety (idempotent / dry-run / rollback procedure) for any
+          schema-touching change.
