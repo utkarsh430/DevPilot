@@ -1,0 +1,66 @@
+# Phase 1 / M12 — Promptfoo eval set for the Tech Writer role.
+
+description: "Tech Writer role — audience-aware artifact production"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    config:
+      temperature: 0
+      max_tokens: 1500
+
+prompts:
+  - id: techwriter-system
+    raw: |
+      System:
+      {{ system_prompt }}
+
+      User:
+      ticketId: {{ ticketId }}
+
+      Ticket:
+      Title: {{ title }}
+      Description: {{ description }}
+      Acceptance Criteria:
+      {{ acceptance_criteria }}
+
+defaultTest:
+  vars:
+    system_prompt: file://snapshots/techwriter.system.txt
+
+tests:
+  - description: "runbook request → identifies audience and produces a runbook"
+    vars:
+      ticketId: "dddddddd-dddd-dddd-dddd-dddddddddddd"
+      title: "Write runbook for Inngest run replay"
+      description: "Operators need a step-by-step runbook for replaying a failed run from the Inspector."
+      acceptance_criteria: |
+        - Identifies audience (on-call SRE)
+        - Step-by-step ordered list
+        - Includes rollback note
+    assert:
+      - type: regex
+        value: "(?i)Artifact:|Runbook|audience"
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The output must (1) name the audience explicitly (operator/SRE),
+          (2) be structured as an ordered runbook with concrete steps, and
+          (3) avoid marketing fluff or hedging language.
+
+  - description: "release-notes request → user-facing voice"
+    vars:
+      ticketId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+      title: "Write release notes for parallel-workflow launch"
+      description: "Users need release notes explaining the new parallel agent workflows feature."
+      acceptance_criteria: |
+        - User-facing, not engineer-facing
+        - Explains what changed and why it matters
+        - Includes a short upgrade note
+    assert:
+      - type: llm-rubric
+        provider: anthropic:messages:claude-sonnet-4-5-20250929
+        value: |
+          The output must be release notes (not API docs, not a runbook),
+          written for end users in a concise active voice. Pass iff the
+          artifact type is named at the top, audience is end-user, and the
+          content explains the user-visible change.
