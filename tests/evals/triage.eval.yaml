@@ -1,0 +1,71 @@
+# Phase 1 / M12 — Promptfoo eval set for the Triage role.
+#
+# Triage's contract is the structured `next: <branch_key>` token at the END
+# of the assistant message. The branch-signal parser only accepts
+# `small_change` or `large_change` for this role; anything else falls
+# through to state-machine default routing.
+
+description: "Triage role — emits structured `next:` branch key"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    config:
+      temperature: 0
+      max_tokens: 600
+
+prompts:
+  - id: triage-system
+    raw: |
+      System:
+      {{ system_prompt }}
+
+      User:
+      ticketId: {{ ticketId }}
+
+      Ticket:
+      Title: {{ title }}
+      Description: {{ description }}
+      Acceptance Criteria:
+      {{ acceptance_criteria }}
+
+defaultTest:
+  vars:
+    system_prompt: file://snapshots/triage.system.txt
+
+tests:
+  - description: "typo fix on a single file → small_change"
+    vars:
+      ticketId: "77777777-7777-7777-7777-777777777777"
+      title: "Fix typo in /about page"
+      description: "The /about page says 'agnets' instead of 'agents'."
+      acceptance_criteria: |
+        - Replace 'agnets' with 'agents' in app/about/page.tsx
+    assert:
+      - type: regex
+        value: '(?m)^next:\s*small_change\s*$'
+
+  - description: "RLS / auth boundary change → large_change"
+    vars:
+      ticketId: "88888888-8888-8888-8888-888888888888"
+      title: "Add cross-tenant API key sharing"
+      description: "Tenants need to share read-only API keys with partner tenants. This requires changing RLS policies on the api_keys table and adding a new permission-check function used by every route."
+      acceptance_criteria: |
+        - New RLS policy on api_keys.shared_with_tenant_ids
+        - All /api/* routes call check_tenant_access()
+        - Audit log captures cross-tenant accesses
+    assert:
+      - type: regex
+        value: '(?m)^next:\s*large_change\s*$'
+
+  - description: "new migration altering existing table → large_change"
+    vars:
+      ticketId: "99999999-9999-9999-9999-999999999999"
+      title: "Add archived_at column to tickets"
+      description: "Add nullable archived_at timestamptz to tickets. Backfill all existing rows with NULL. Update list query to filter archived rows."
+      acceptance_criteria: |
+        - Migration adds archived_at column
+        - Existing list query excludes archived rows
+        - New /api/tickets/archive endpoint sets the column
+    assert:
+      - type: regex
+        value: '(?m)^next:\s*large_change\s*$'

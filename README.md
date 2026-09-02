@@ -220,3 +220,36 @@ The name is **dev** + **pilot**: agents that fly your development work across a 
 
 ---
 
+## Quick start
+
+DevPilot is a pnpm monorepo (`apps/web` + `apps/runner`). Everything runs on your machine; the only account you need is a Claude subscription for the agents (or an API key).
+
+**Prerequisites:** Node 20+ · pnpm 10 (`corepack enable`) · Docker Desktop running · the [Supabase CLI](https://supabase.com/docs/guides/cli) · the `claude` CLI signed in (`npm install -g @anthropic-ai/claude-code && claude`).
+
+```bash
+git clone https://github.com/utkarsh430/DevPilot.git && cd DevPilot
+pnpm install
+pnpm setup:local      # once: local Supabase + Redis, your sign-in account, apps/web/.env.local
+pnpm dev:local        # every time: web app + durable Inngest server + runner, one terminal
+```
+
+Open **http://127.0.0.1:3000**, enter the email you gave, and you are in — a local install signs you in directly. Create a project, file a ticket, move it to Ready, and watch the runner pick it up.
+
+`setup:local` is safe to re-run (it never overwrites a value you have set — blank a line in `.env.local` and re-run to change it). `dev:local` starts Docker Desktop, Supabase and Redis if they are down, applies pending migrations, and refuses to start on a missing key or a busy port rather than failing quietly. No Claude subscription? Put an `ANTHROPIC_API_KEY` in `.env.local` and switch the tenant to API auth under **Settings → LLM auth**.
+
+### Connect GitHub (one-time)
+
+Every project is a GitHub repository. Register an OAuth App at <https://github.com/settings/developers> with callback URL `http://127.0.0.1:54321/auth/v1/callback`, then:
+
+```bash
+pnpm setup:local --github-client-id <id> --github-client-secret <secret>
+```
+
+### What survives a restart
+
+Everything. Projects, tickets, runs and settings live in local Postgres; the job queue in Redis; agent workspaces under `~/.devpilot/workspaces`; in-flight durable runs in the self-hosted Inngest server. A run that was sleeping or waiting for a step result when you stopped the stack resumes where it was; a step that was mid-`claude -p` is re-queued and simply runs again. `.env.local` is backed up to `~/.devpilot/env-backups/` so the key that encrypts stored secrets is never lost. To start over: `supabase db reset` and `docker compose -f infra/local/docker-compose.yml down -v`.
+
+### Always-on host
+
+To let agents work while you are logged off, install the runner under launchd (macOS) or systemd (Linux) — see [`infra/README.md`](infra/README.md).
+
