@@ -253,3 +253,54 @@ Everything. Projects, tickets, runs and settings live in local Postgres; the job
 
 To let agents work while you are logged off, install the runner under launchd (macOS) or systemd (Linux) — see [`infra/README.md`](infra/README.md).
 
+### Everyday commands
+
+| Command                                              | What it does                                          |
+| ---------------------------------------------------- | ----------------------------------------------------- |
+| `pnpm dev:local`                                     | Full local stack with preflight checks                |
+| `pnpm typecheck` · `pnpm test`                       | `tsc --noEmit` for both apps · Vitest (both CI-gated) |
+| `pnpm build`                                         | Next.js production build + runner compile             |
+| `pnpm format` / `pnpm format:check`                  | Prettier write / check (CI-gated)                     |
+| `pnpm check:brand`                                   | Guards the retired legacy identifiers                 |
+| `node --import tsx tests/evals/snapshot-prompts.mjs` | Regenerate the committed role-prompt snapshots        |
+
+Per-app: `pnpm --filter @devpilot/web <script>` · `pnpm --filter @devpilot/runner <script>`. Acceptance scripts that drive the real stack (`accept:*`) live in `apps/web/package.json` and `apps/runner/package.json`.
+
+---
+
+## Repository layout
+
+```
+DevPilot/
+├── apps/
+│   ├── web/                  # Next.js app, durable engine, all product surfaces
+│   │   ├── app/              # Routes: board, runs, agents, builder, plan, projects, marketplace, …
+│   │   ├── components/       # UI
+│   │   ├── lib/              # Engine, board FSM, roles, integration, learning, export, llm, security …
+│   │   └── scripts/          # setup:local, dev:local, acceptance scripts, guide capture
+│   └── runner/               # Resident worker: workspaces, claude -p, MCP board tools, loops
+├── supabase/
+│   ├── migrations/           # 110 forward-only SQL migrations (RLS, triggers, RPCs)
+│   ├── seeds/                # Guide fixture
+│   └── tests/                # Throwaway-Postgres RLS harness
+├── tests/evals/              # Promptfoo role evals + committed prompt snapshots
+├── docs/                     # PRD, TDD, phase plans, implementation status, runbooks
+└── infra/                    # launchd / systemd units, local docker-compose
+```
+
+---
+
+## Status & roadmap
+
+**Shipped:** the durable engine and board, the full role catalogue and custom roles, the local and API runners, quality and safety gates, the self-healing family and supervisor, auto-land and the shipping pipeline, Vercel integration, agent learning and the scoreboard, plan mode and the stack advisor, the skills marketplace, audit exports, the headless API and widget, billing, the setup wizard and system health, the in-app guide and manual, and the one-command local stack.
+
+**Not yet built** (tracked in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md), the truthful planned-vs-built map):
+
+- Retrieval-augmented knowledge bases (pgvector schema exists; no embedding or retrieval code yet)
+- E2B sandboxing for untrusted code
+- The Live Playground and Data Sources screens
+- Transactional email (Resend) and a containerised runner / Vercel + Inngest Cloud deployment recipe
+- Per-project prompt overlays and a few other partials called out in that document
+
+---
+
