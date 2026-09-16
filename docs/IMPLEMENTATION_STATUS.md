@@ -101,3 +101,10 @@ Each item lists its plan source and a one-line evidence note. This is the sectio
 - **Trigger.dev durable-engine contingency** — plan: TDD §5 line 497 (Inngest → Trigger.dev at scale).
   Only Inngest is wired; Trigger.dev is a documented future contingency, not started.
 
+### Stack listed but unwired
+
+- **Sentry** (error tracking) — TDD §2 line 99. 0 imports, no dependency.
+- **PostHog** (product analytics) — TDD §2 line 100. 0 imports, no dependency.
+- **pm2** (process supervisor) — TDD §3.13 line 338 ("systemd or pm2"). Not shipped; **launchd** (macOS) + systemd (Linux) shipped instead.
+- **Pinecone** (vector store) — TDD §2 line 84, marked _optional_. 0 imports; acceptable, pgvector is the documented default.
+
