@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Template — NOT tied to any specific user's home directory.
+
+  launchd plists cannot use systemd-style `%h` substitution, so the __TOKENS__
+  below are rendered to absolute paths at install time by infra/launchd/install.sh,
+  which auto-resolves the repo root from its own location (the launchd analogue of
+  the systemd unit's `%h`-relative paths). The installed copy under
+  ~/Library/LaunchAgents/ carries the real paths; this committed template stays
+  host-neutral. If you install by hand instead of via install.sh, replace every
+  __TOKEN__ before loading.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.devpilot.runner</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/pnpm</string>
+        <string>exec</string>
+        <string>tsx</string>
+        <string>--env-file=../web/.env.local</string>
+        <string>src/index.ts</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__DEVPILOT_RUNNER_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/.devpilot/logs/runner.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/.devpilot/logs/runner.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>
