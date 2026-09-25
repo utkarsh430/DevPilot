@@ -108,3 +108,10 @@ Each item lists its plan source and a one-line evidence note. This is the sectio
 - **pm2** (process supervisor) — TDD §3.13 line 338 ("systemd or pm2"). Not shipped; **launchd** (macOS) + systemd (Linux) shipped instead.
 - **Pinecone** (vector store) — TDD §2 line 84, marked _optional_. 0 imports; acceptable, pgvector is the documented default.
 
+### Notable partials
+
+- **Stripe subscription/checkout lifecycle** — usage metering + markup + soft-cutoff + billing portal work, but there is no plan/tier catalog and no Checkout/subscription-creation flow (the webhook covers payment-method events only).
+- **Plan-mode Haiku goal-summary** — intentionally deferred (`TODO(M7-v2)`); the UI degrades to "no summary yet."
+- **Durable `awaiting_human` / `waitForEvent` pause seam** — the originally-scaffolded warm-resume seam was never finished and is worked around (a human comment fires a fresh cold dispatch instead); the `awaiting_human` lookup remains as a no-op breadcrumb.
+- **Widget hardening** — functional end-to-end iframe chat, but no domain allowlist (`frame-ancestors *`), no auto-generated embed snippet, no `postMessage`.
+
