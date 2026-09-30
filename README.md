@@ -304,3 +304,25 @@ DevPilot/
 
 ---
 
+## Documentation
+
+| Document                                                         | What it covers                                                                                 |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [`docs/DEVPILOT_PRD.md`](docs/DEVPILOT_PRD.md)                   | Product requirements, phases and exit criteria                                                 |
+| [`docs/DEVPILOT_TDD.md`](docs/DEVPILOT_TDD.md)                   | Technical design: data model, engine, runners, flows                                           |
+| [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) | Planned-vs-built map and the gap list                                                          |
+| [`docs/runbooks/`](docs/runbooks/)                               | Step-by-step recipes: add a role, add a migration, add a durable function, rotate a credential |
+| [`infra/README.md`](infra/README.md)                             | Running the runner as an always-on service                                                     |
+| In-app **Guide** (`/guide`) and downloadable manual              | Operator documentation with captured screens                                                   |
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR, run the same gates CI runs — `pnpm typecheck`, `pnpm test` and `pnpm format:check` — and read the module headers around the code you touch; most mechanisms document why they exist and what must not be undone right where they live.
+
+## Author & license
+
+Built by **Utkarsh Singh** ([@utkarsh430](https://github.com/utkarsh430)).
+
+Released under the **MIT License** — see [`LICENSE`](LICENSE). You are free to use, modify, self-host and build on DevPilot, commercially or otherwise; attribution and the license notice travel with the code.
