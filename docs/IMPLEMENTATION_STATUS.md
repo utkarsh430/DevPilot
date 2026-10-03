@@ -115,3 +115,19 @@ Each item lists its plan source and a one-line evidence note. This is the sectio
 - **Durable `awaiting_human` / `waitForEvent` pause seam** — the originally-scaffolded warm-resume seam was never finished and is worked around (a human comment fires a fresh cold dispatch instead); the `awaiting_human` lookup remains as a no-op breadcrumb.
 - **Widget hardening** — functional end-to-end iframe chat, but no domain allowlist (`frame-ancestors *`), no auto-generated embed snippet, no `postMessage`.
 
+### Go backend migration (evaluated and declined)
+
+The branch is named `feat-BE-migration_to-Go`, but there is **zero Go code**, no `go.mod`/`go.sum`/`go.work`, and no Go design doc in the tree.
+The branch is one TypeScript commit ahead of `main` (`2fb8235`, a runner cancel channel + fail-closed budget breaker).
+
+**Decision (2026-07-05):** the Go backend migration was **evaluated and declined** — a design review recommended against it, and the backend **stays TypeScript / Inngest**.
+It is therefore **not** an open/pending item and will not be built; the branch name is a vestigial artifact of the evaluation, not a signal of in-progress work.
+This cleanup does not rename the branch and does not add Go to the stack docs (the PRD/TDD/README stack — Next.js + TypeScript + Inngest — remains the source of truth).
+
+---
+
+## Known doc-vs-reality drifts (now corrected)
+
+The status/handoff docs had drifted badly from the shipped code (stale "Phase 0" status lines, dead commit hashes from a history rewrite, an "~80 uncommitted paths" framing against a clean tree, foreign-developer absolute paths, and several schema/stack claims that no longer match).
+Those were cleaned up in the same change that added this document — see the corrected `README.md`, `CLAUDE.md`, `docs/SESSION_HANDOFF.md`, the two phase plans, `docs/DEVPILOT_PRD.md`, `docs/DEVPILOT_TDD.md`, and `infra/`.
+The PRD, TDD, and phase plans are retained as design intent / spec-of-record; they were annotated, not removed.
