@@ -1,0 +1,54 @@
+# Local-only Redis for `pnpm dev:local` / `pnpm setup:local`.
+#
+# The app and the runner speak Upstash's REST protocol (`@upstash/redis`), not
+# RESP, so a bare Redis is not enough: `redis-http` is an Upstash-compatible
+# REST front (serverless-redis-http) in front of a plain Redis. Together they
+# replace the Upstash account a fresh clone would otherwise need.
+#
+# LOCAL ONLY. The REST port is bound to 127.0.0.1 and the token below is a
+# fixed, published, local-only value — the same posture as Supabase's
+# well-known local keys. It must match `LOCAL_REDIS_REST_TOKEN` in
+# `apps/web/lib/dev/local-stack.ts` (a test pins the two together). Never
+# reuse this file for anything reachable from a network.
+#
+#   docker compose -f infra/local/docker-compose.yml up -d     # start
+#   docker compose -f infra/local/docker-compose.yml down -v   # stop + wipe the queue
+name: devpilot-local
+
+services:
+  redis:
+    image: redis:7-alpine
+    # Come back on their own after a reboot or an engine restart, like the
+    # Supabase containers do; `pnpm dev:local` also `up -d`s them regardless.
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports:
+      # The self-hosted Inngest server keeps its queue + run state here (db 1,
+      # see LOCAL_INNGEST_REDIS_URI) - that is what makes an in-flight run
+      # survive a restart. Non-default host port so a developer's own Redis on
+      # 6379 is untouched; loopback only.
+      - "127.0.0.1:16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  redis-http:
+    # Pinned by digest: `latest` could change the REST contract underneath us.
+    image: hiett/serverless-redis-http@sha256:5b0bb9239fce53abf87b2018a7a0deb9ec7bd900c5360738fe5fbeeb426f9150
+    restart: unless-stopped
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: devpilot-local-dev-token
+      SRH_CONNECTION_STRING: redis://redis:6379
+    ports:
+      - "127.0.0.1:8079:80"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-data:

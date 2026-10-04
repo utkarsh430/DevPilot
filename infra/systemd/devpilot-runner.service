@@ -1,0 +1,19 @@
+[Unit]
+Description=DevPilot Local Claude Code Runner (Phase 0)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/code/devpilot/apps/runner
+Environment="PATH=%h/.local/share/pnpm:%h/.local/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/env pnpm exec tsx --env-file=../web/.env.local src/index.ts
+Restart=always
+RestartSec=5
+StandardOutput=append:%h/.devpilot/logs/runner.out.log
+StandardError=append:%h/.devpilot/logs/runner.err.log
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target
