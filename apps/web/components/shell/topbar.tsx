@@ -54,7 +54,7 @@ import {
 import { THEMES, useTheme } from "@/components/shell/theme-provider";
 import { GLOBAL_NAV, NAV_GROUPS } from "@/components/shell/nav-config";
 import { ProjectSwitcher, type ProjectSwitcherItem } from "@/components/shell/project-switcher";
-import { DevPilotMark } from "@/components/shell/devpilot-mark";
+import { DevPilotLogo, DevPilotMark } from "@/components/shell/devpilot-mark";
 import { SystemStatus } from "@/components/shell/system-status";
 import type { SystemHealthSnapshot } from "@/lib/health/types";
 import { NotificationsBell } from "@/components/shell/notifications-bell";
@@ -138,10 +138,8 @@ export function TopBar({
         className="chrome-no-select flex items-center gap-2 transition-opacity hover:opacity-80"
         aria-label="DevPilot home"
       >
-        <DevPilotMark className="h-[18px] w-[18px]" />
-        <span className="font-display hidden text-[15px] font-bold lowercase leading-none tracking-tight sm:inline">
-          devpilot
-        </span>
+        <DevPilotMark className="h-[18px] w-[18px] sm:hidden" />
+        <DevPilotLogo className="hidden h-[22px] sm:inline-flex" alt="" />
       </Link>
       <div className="ml-auto flex items-center gap-2">
         {/* Command palette trigger */}

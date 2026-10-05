@@ -66,10 +66,16 @@ const nextConfig: NextConfig = {
   // source-level can see it; `pnpm --filter @devpilot/web accept:guide` is what
   // checks it against a real build.
   outputFileTracingIncludes: {
-    "/api/board/tickets/[id]/export": ["./node_modules/@fontsource/**/files/*.woff"],
-    "/api/inngest": ["./node_modules/@fontsource/**/files/*.woff"],
+    // `./public/brand/*.png` is the logo the PDF chrome reads at render time
+    // (`lib/export/brand-assets.ts`), on every route that renders a PDF.
+    "/api/board/tickets/[id]/export": [
+      "./node_modules/@fontsource/**/files/*.woff",
+      "./public/brand/*.png",
+    ],
+    "/api/inngest": ["./node_modules/@fontsource/**/files/*.woff", "./public/brand/*.png"],
     "/api/guide/manual": [
       "./node_modules/@fontsource/**/files/*.woff",
+      "./public/brand/*.png",
       "./public/guide/*.png",
       "./public/guide/*.jpg",
       "./public/guide/*.jpeg",

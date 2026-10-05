@@ -1,70 +1,57 @@
 // Cover, running header, footer — the artifact's brand chrome.
 //
-// The mark is PORTED, not imported: `components/shell/devpilot-mark.tsx` is an
-// SVG React component built for the DOM, and react-pdf's renderer resolves a
-// different element namespace (its `<Svg>/<Rect>` are its own primitives, and
-// `hsl(var(--primary))` means nothing without a cascade). The geometry below is
-// transcribed from that file — three descending lanes in ink plus one signal-
-// orange card in flight at -10° — drawn with react-pdf's Svg primitives against
-// resolved hex from `theme.ts`.
+// The logo is the same bitmap the web app serves from `public/brand/`, read at
+// render time by `lib/export/brand-assets.ts` and embedded with react-pdf's
+// `<Image>`. One source for both surfaces, so the PDF can never show a stale
+// mark. The PDF always draws the LIGHT variant: every surface here is the paper
+// colour (`SURFACE`), never a dark chrome.
 //
-// If the brand mark changes, this is a second place to change. That is a real
-// cost, accepted knowingly: the alternative is a DOM-SVG-to-PDF translation
-// layer for one 4-shape logo.
+// When the file cannot be read (a lambda whose tracer dropped `public/`, a
+// broken checkout) the chrome degrades to a text wordmark rather than failing
+// the export — same posture as the guide figures.
 
 import React from "react";
-import { Svg, Polygon, Rect, Text, View } from "@react-pdf/renderer";
+import { Image, Text, View } from "@react-pdf/renderer";
 import { COLORS, SURFACE, mix } from "@/lib/export/theme";
 import { FONT_FAMILY } from "@/lib/export/fonts";
+import { brandAsset, brandAssetBox } from "@/lib/export/brand-assets";
 import { styles } from "@/lib/export/components/primitives";
 import { oneLineTruncated } from "@/lib/export/truncate";
 
-/**
- * The signal card, pre-rotated.
- *
- * `DevPilotMark` tilts it with `transform="rotate(-10 16.2 18.2)"`. react-pdf
- * cannot take that: its SVG renderer expects `transform` to be an ARRAY of
- * already-parsed operations, and handing it an SVG transform STRING throws
- * `operations.forEach is not a function` deep inside `applyTransformations` —
- * i.e. it fails at render time, not at type-check time.
- *
- * So the rotation is baked into the geometry: these are the rect's four corners
- * rotated -10° about (16.2, 18.2), drawn as a polygon. The 1.5 corner radius is
- * lost, which is imperceptible at the sizes the mark is ever drawn (≤ 22pt, so
- * the card is ~6pt across).
- */
-const SIGNAL_CARD_POINTS = "12.57,16.61 19.07,15.46 19.83,19.79 13.33,20.94";
-
-/** The DevPilot mark. Geometry mirrors `DevPilotMark`'s 24×24 viewBox. */
+/** The square DevPilot mark, `size` points on a side. */
 export function DevPilotMarkPdf({
   size = 24,
   tone = COLORS.foreground,
 }: {
   size?: number;
+  /** Used only by the text fallback; the bitmap carries its own colours. */
   tone?: string;
 }) {
-  // The viewBox does the scaling — `size` only sets the drawn box.
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Rect x={3} y={3} width={4.2} height={18} rx={2.1} fill={tone} />
-      <Rect x={9.9} y={3} width={4.2} height={12.5} rx={2.1} fill={tone} />
-      <Rect x={16.8} y={3} width={4.2} height={7.5} rx={2.1} fill={tone} />
-      {/* The card in flight — always the signal accent, in both chromes. */}
-      <Polygon points={SIGNAL_CARD_POINTS} fill={COLORS.primary} />
-    </Svg>
-  );
+  const src = brandAsset("mark");
+  if (!src) return <WordmarkFallback size={size} tone={tone} />;
+  // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image, not a DOM <img>; PDFs carry no alt
+  return <Image src={src} style={{ width: size, height: size }} />;
 }
 
+/** The full lockup (mark + wordmark), `size` points tall. */
 export function DevPilotLogoPdf({
   tone = COLORS.foreground,
   size = 20,
 }: {
+  /** Used only by the text fallback; the bitmap carries its own colours. */
   tone?: string;
   size?: number;
 }) {
+  const src = brandAsset("logo");
+  if (!src) return <WordmarkFallback size={size} tone={tone} />;
+  const box = brandAssetBox("logo", size);
+  // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image, not a DOM <img>; PDFs carry no alt
+  return <Image src={src} style={{ width: box.width, height: box.height }} />;
+}
+
+function WordmarkFallback({ size, tone }: { size: number; tone: string }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <DevPilotMarkPdf size={size} tone={tone} />
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
       <Text
         style={{
           fontFamily: FONT_FAMILY.display,

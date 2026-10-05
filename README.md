@@ -1,6 +1,6 @@
 <div align="center">
 
-# DevPilot
+<img src="apps/web/public/brand/devpilot-logo.png" alt="DevPilot" width="420">
 
 ### The board your agents run.
 

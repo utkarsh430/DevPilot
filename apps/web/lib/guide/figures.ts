@@ -173,7 +173,7 @@ export const GUIDE_FIGURES: readonly GuideFigure[] = [
     theme: "light",
     build: "03f50a8",
     staleAcknowledged: {
-      fingerprint: "ab501ab697c3e5895fb90e65782ceac7c9f12fea6a51e66d6627031ce8c322aa",
+      fingerprint: "038f6893c8fa3d100dd69dbe892c142f3c7804ff254802ad3d6c9306016c010c",
       note: "Watched files changed in the DevPilot product rename (brand strings, identifiers and the renamed logo module), on top of any earlier drift. The captured pixels still show the previous wordmark and will be recaptured; the layout and the data in frame are unchanged.",
       since: "2026-10-04",
     },
