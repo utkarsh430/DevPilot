@@ -908,7 +908,7 @@ function SiteFooter() {
     <footer className="border-t">
       <div className="text-muted-foreground mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 py-8 text-xs sm:flex-row sm:justify-between">
         <div className="flex items-center gap-3">
-          <DevPilotLogo className="[&>span:last-child]:text-sm" markClassName="h-4 w-4" />
+          <DevPilotLogo className="h-5" />
           <span className="hidden sm:inline">the board your agents run</span>
         </div>
         <div className="flex items-center gap-4">
